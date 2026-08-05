@@ -57,19 +57,8 @@ Retro-Snake/
 
 - High score leaderboard
 - Multiple difficulty levels
-- Sound effects and background music
-- Pause and resume functionality
 - Mobile device support
 - Custom themes and skins
 
 ---
 
-## 📄 License
-
-This project is open-source and available for educational and personal use.
-
----
-
-## 🐍 Retro Snake
-
-Relive the nostalgia of the classic Snake game and challenge yourself to beat your highest score!
