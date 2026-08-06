@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Neon Snake</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="sun"></div>
+  <div class="cloud cloud1"></div>
+  <div class="cloud cloud2"></div>
+
+  <div class="arcade">
+    <h1>Python.exe</h1>
+
+    <div class="hud">
+      <div>
+        <span class="label">SCORE</span>
+        <span class="value" id="score">0</span>
+      </div>
+      <div>
+        <span class="label">BEST</span>
+        <span class="value" id="best">0</span>
+      </div>
+      <button class="mute-btn" id="muteBtn" title="Mute sound">🔊</button>
+    </div>
+
+    <div class="board-wrap">
+      <canvas id="game" width="480" height="480"></canvas>
+      <div class="overlay show" id="overlay">
+        <h2 id="overlayTitle">Ready?</h2>
+        <p id="overlayText">Arrow keys or WASD to move. Eat the berries, don't bite yourself.</p>
+        <button id="startBtn">Start Game</button>
+      </div>
+    </div>
+
+    <p class="controls-hint">Arrow keys / WASD to steer &middot; Space to pause &middot; swipe on mobile</p>
+
+    <div class="dpad" id="dpad">
+      <span></span>
+      <button data-dir="up">&#9650;</button>
+      <span></span>
+      <button data-dir="left">&#9664;</button>
+      <span></span>
+      <button data-dir="right">&#9654;</button>
+      <span></span>
+      <button data-dir="down">&#9660;</button>
+      <span></span>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
