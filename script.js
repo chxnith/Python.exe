@@ -170,8 +170,7 @@
       if (i === 0) {
         drawRoundedCell(seg.x, seg.y, '#FFD93D', 1);
       } else {
-        const color = rainbow[i % rainbow.length];
-        drawRoundedCell(seg.x, seg.y, color, 3);
+        drawRoundedCell(seg.x, seg.y, '#3B82F6', 3);
       }
     });
 
