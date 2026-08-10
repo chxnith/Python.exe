@@ -15,7 +15,7 @@
 
   const rainbow = ['#FF6B6B', '#FFD93D', '#4ECDC4', '#C77DFF', '#FF6EC7'];
   const levelEl = document.getElementById('level');
-  const LEVEL2_SCORE = 250;
+  const LEVEL2_SCORE = 100;
 
   let snake, dir, nextDir, food, score, best, running, paused, speedMs, loopHandle;
   let particles = [];
