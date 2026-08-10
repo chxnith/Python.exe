@@ -14,9 +14,12 @@
   const dpad = document.getElementById('dpad');
 
   const rainbow = ['#FF6B6B', '#FFD93D', '#4ECDC4', '#C77DFF', '#FF6EC7'];
+  const levelEl = document.getElementById('level');
+  const LEVEL2_SCORE = 250;
 
   let snake, dir, nextDir, food, score, best, running, paused, speedMs, loopHandle;
   let particles = [];
+  let level = 1;
 
   best = Number(localStorage.getItem('neonSnakeBest') || 0);
   bestEl.textContent = best;
@@ -73,6 +76,13 @@
     [392, 330, 262, 196].forEach((f, i) => tone(f, t + i * 0.14, 0.22, 'sawtooth', 0.1));
   }
 
+  function playLevelUpSound() {
+    if (muted) return;
+    const ac = getAudioCtx();
+    const t = ac.currentTime;
+    [523, 659, 784, 1047].forEach((f, i) => tone(f, t + i * 0.08, 0.18, 'triangle', 0.13));
+  }
+
   muteBtn.addEventListener('click', () => {
     muted = !muted;
     localStorage.setItem('gardenSnakeMuted', String(muted));
@@ -92,7 +102,29 @@
     speedMs = 130;
     particles = [];
     scoreEl.textContent = score;
+    level = 1;
+    levelEl.textContent = level;
+    document.body.classList.remove('level2');
     placeFood();
+  }
+
+  function checkLevelUp() {
+    if (level === 1 && score >= LEVEL2_SCORE) {
+      level = 2;
+      levelEl.textContent = level;
+      document.body.classList.add('level2');
+      playLevelUpSound();
+      showLevelUpToast();
+    }
+  }
+
+  function showLevelUpToast() {
+    const toast = document.createElement('div');
+    toast.className = 'level-toast';
+    toast.textContent = 'LEVEL 2!';
+    document.querySelector('.board-wrap').appendChild(toast);
+    setTimeout(() => toast.classList.add('fade'), 1000);
+    setTimeout(() => toast.remove(), 1700);
   }
 
   function placeFood() {
@@ -122,18 +154,43 @@
   }
 
   function drawBoard() {
-    for (let y = 0; y < rows; y++) {
-      for (let x = 0; x < cols; x++) {
-        const stripe = Math.floor((x + y) / 2) % 2 === 0;
-        ctx.fillStyle = stripe ? '#4C8C3B' : '#579941';
-        ctx.fillRect(x * cell, y * cell, cell, cell);
+    if (level === 2) {
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          const stripe = Math.floor((x + y) / 2) % 2 === 0;
+          ctx.fillStyle = stripe ? '#1B1440' : '#241B54';
+          ctx.fillRect(x * cell, y * cell, cell, cell);
+        }
       }
-    }
-    ctx.fillStyle = 'rgba(255,255,255,0.06)';
-    for (let i = 0; i < 40; i++) {
-      const gx = (i * 53) % (cols * cell);
-      const gy = (i * 97) % (rows * cell);
-      ctx.fillRect(gx, gy, 2, 6);
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      for (let i = 0; i < 55; i++) {
+        const sx = (i * 71) % (cols * cell);
+        const sy = (i * 113) % (rows * cell);
+        const r = (i % 3 === 0) ? 1.6 : 0.9;
+        ctx.beginPath();
+        ctx.arc(sx, sy, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = 'rgba(199,125,255,0.08)';
+      for (let i = 0; i < 20; i++) {
+        const gx = (i * 89) % (cols * cell);
+        const gy = (i * 137) % (rows * cell);
+        ctx.fillRect(gx, gy, 3, 10);
+      }
+    } else {
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          const stripe = Math.floor((x + y) / 2) % 2 === 0;
+          ctx.fillStyle = stripe ? '#4C8C3B' : '#579941';
+          ctx.fillRect(x * cell, y * cell, cell, cell);
+        }
+      }
+      ctx.fillStyle = 'rgba(255,255,255,0.06)';
+      for (let i = 0; i < 40; i++) {
+        const gx = (i * 53) % (cols * cell);
+        const gy = (i * 97) % (rows * cell);
+        ctx.fillRect(gx, gy, 2, 6);
+      }
     }
   }
 
@@ -170,7 +227,8 @@
       if (i === 0) {
         drawRoundedCell(seg.x, seg.y, '#FFD93D', 1);
       } else {
-        drawRoundedCell(seg.x, seg.y, '#3B82F6', 3);
+        const color = rainbow[i % rainbow.length];
+        drawRoundedCell(seg.x, seg.y, color, 3);
       }
     });
 
@@ -236,6 +294,7 @@
       scoreEl.textContent = score;
       spawnParticles(food.x, food.y, food.hue);
       playEatSound();
+      checkLevelUp();
       speedMs = Math.max(70, speedMs - 2);
       placeFood();
       clearInterval(loopHandle);
