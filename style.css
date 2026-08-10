@@ -233,3 +233,58 @@ canvas {
 @media (max-width: 560px) {
   .dpad { display: grid; }
 }
+
+/* --- Level 2: night sky theme --- */
+body.level2 {
+  background: linear-gradient(180deg, #0B0A26 0%, #1B1440 55%, #2E1F5E 100%);
+  color: var(--text-soft);
+  transition: background 0.6s ease;
+}
+
+body.level2 .sun,
+body.level2 .cloud {
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+
+body.level2 .hud {
+  background: rgba(20, 15, 50, 0.55);
+}
+
+body.level2 .hud .label { color: #C77DFF; }
+body.level2 .hud .value { color: #FFD93D; }
+
+body.level2 .board-wrap {
+  background: linear-gradient(135deg, #2E1F5E, #1B1440);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.55), 0 0 24px rgba(199, 125, 255, 0.25);
+}
+
+body.level2 .controls-hint {
+  color: var(--text-soft);
+  opacity: 0.6;
+}
+
+.level-toast {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Baloo 2', cursive;
+  font-weight: 800;
+  font-size: 26px;
+  letter-spacing: 1px;
+  padding: 8px 22px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #C77DFF, #FFD93D);
+  color: #17301B;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  opacity: 1;
+  transition: opacity 0.7s ease, transform 0.7s ease;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.level-toast.fade {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-10px);
+}
