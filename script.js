@@ -13,9 +13,39 @@
   const startBtn = document.getElementById('startBtn');
   const dpad = document.getElementById('dpad');
 
-  const rainbow = ['#FF6B6B', '#FFD93D', '#4ECDC4', '#C77DFF', '#FF6EC7'];
   const levelEl = document.getElementById('level');
   const LEVEL2_SCORE = 100;
+
+  const THEMES = {
+    1: {
+      accent: '#35E6A0',
+      accentDark: '#0FA36F',
+      boardA: '#111623',
+      boardB: '#0D111C',
+      grid: 'rgba(53, 230, 160, 0.06)',
+    },
+    2: {
+      accent: '#8C6BFF',
+      accentDark: '#5A3FCC',
+      boardA: '#171327',
+      boardB: '#12101F',
+      grid: 'rgba(140, 107, 255, 0.07)',
+    },
+  };
+  const BERRY = '#FF5C7A';
+
+  function hexToRgb(hex) {
+    const n = parseInt(hex.slice(1), 16);
+    return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+  }
+
+  function mixColor(hexA, hexB, t) {
+    const a = hexToRgb(hexA), b = hexToRgb(hexB);
+    const r = Math.round(a.r + (b.r - a.r) * t);
+    const g = Math.round(a.g + (b.g - a.g) * t);
+    const bl = Math.round(a.b + (b.b - a.b) * t);
+    return `rgb(${r}, ${g}, ${bl})`;
+  }
 
   let snake, dir, nextDir, food, score, best, running, paused, speedMs, loopHandle;
   let particles = [];
@@ -133,7 +163,7 @@
       pos = { x: Math.floor(Math.random() * cols), y: Math.floor(Math.random() * rows) };
     } while (snake.some(s => s.x === pos.x && s.y === pos.y));
     food = pos;
-    food.hue = Math.random() * 360;
+    food.hue = 350 + (Math.random() * 20 - 10);
   }
 
   function drawRoundedCell(x, y, color, inset) {
@@ -154,86 +184,90 @@
   }
 
   function drawBoard() {
-    if (level === 2) {
-      for (let y = 0; y < rows; y++) {
-        for (let x = 0; x < cols; x++) {
-          const stripe = Math.floor((x + y) / 2) % 2 === 0;
-          ctx.fillStyle = stripe ? '#1B1440' : '#241B54';
-          ctx.fillRect(x * cell, y * cell, cell, cell);
-        }
-      }
-      ctx.fillStyle = 'rgba(255,255,255,0.5)';
-      for (let i = 0; i < 55; i++) {
-        const sx = (i * 71) % (cols * cell);
-        const sy = (i * 113) % (rows * cell);
-        const r = (i % 3 === 0) ? 1.6 : 0.9;
-        ctx.beginPath();
-        ctx.arc(sx, sy, r, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      ctx.fillStyle = 'rgba(199,125,255,0.08)';
-      for (let i = 0; i < 20; i++) {
-        const gx = (i * 89) % (cols * cell);
-        const gy = (i * 137) % (rows * cell);
-        ctx.fillRect(gx, gy, 3, 10);
-      }
-    } else {
-      for (let y = 0; y < rows; y++) {
-        for (let x = 0; x < cols; x++) {
-          const stripe = Math.floor((x + y) / 2) % 2 === 0;
-          ctx.fillStyle = stripe ? '#4C8C3B' : '#579941';
-          ctx.fillRect(x * cell, y * cell, cell, cell);
-        }
-      }
-      ctx.fillStyle = 'rgba(255,255,255,0.06)';
-      for (let i = 0; i < 40; i++) {
-        const gx = (i * 53) % (cols * cell);
-        const gy = (i * 97) % (rows * cell);
-        ctx.fillRect(gx, gy, 2, 6);
+    const theme = THEMES[level];
+
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) {
+        const stripe = (x + y) % 2 === 0;
+        ctx.fillStyle = stripe ? theme.boardA : theme.boardB;
+        ctx.fillRect(x * cell, y * cell, cell, cell);
       }
     }
+
+    ctx.strokeStyle = theme.grid;
+    ctx.lineWidth = 1;
+    for (let x = 0; x <= cols; x++) {
+      ctx.beginPath();
+      ctx.moveTo(x * cell + 0.5, 0);
+      ctx.lineTo(x * cell + 0.5, rows * cell);
+      ctx.stroke();
+    }
+    for (let y = 0; y <= rows; y++) {
+      ctx.beginPath();
+      ctx.moveTo(0, y * cell + 0.5);
+      ctx.lineTo(cols * cell, y * cell + 0.5);
+      ctx.stroke();
+    }
+
+    const vg = ctx.createRadialGradient(
+      cols * cell / 2, rows * cell / 2, cell * 3,
+      cols * cell / 2, rows * cell / 2, cols * cell / 1.25
+    );
+    vg.addColorStop(0, 'rgba(0,0,0,0)');
+    vg.addColorStop(1, 'rgba(0,0,0,0.4)');
+    ctx.fillStyle = vg;
+    ctx.fillRect(0, 0, cols * cell, rows * cell);
   }
 
   function drawFood(t) {
-    const pulse = 3 + Math.sin(t / 150) * 2;
+    const pulse = 2 + Math.sin(t / 200) * 1.5;
     const cx = food.x * cell + cell / 2;
     const cy = food.y * cell + cell / 2;
-    const grad = ctx.createRadialGradient(cx, cy, 1, cx, cy, cell / 2 + pulse);
-    grad.addColorStop(0, `hsl(${food.hue}, 95%, 70%)`);
-    grad.addColorStop(1, `hsla(${food.hue}, 95%, 55%, 0)`);
+
+    const glow = ctx.createRadialGradient(cx, cy, 1, cx, cy, cell / 2 + pulse + 5);
+    glow.addColorStop(0, 'rgba(255, 92, 122, 0.55)');
+    glow.addColorStop(1, 'rgba(255, 92, 122, 0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(cx, cy, cell / 2 + pulse + 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    const size = cell / 2.7 + pulse * 0.35;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(Math.PI / 4);
+    const grad = ctx.createLinearGradient(-size, -size, size, size);
+    grad.addColorStop(0, '#FF8FA3');
+    grad.addColorStop(1, '#FF3D63');
     ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.arc(cx, cy, cell / 2 + pulse, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.fillRect(-size, -size, size * 2, size * 2);
+    ctx.restore();
 
-    ctx.fillStyle = `hsl(${food.hue}, 85%, 55%)`;
+    ctx.fillStyle = 'rgba(255,255,255,0.65)';
     ctx.beginPath();
-    ctx.arc(cx, cy + 1, cell / 3.2, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = 'rgba(255,255,255,0.55)';
-    ctx.beginPath();
-    ctx.arc(cx - 2.5, cy - 2, 1.8, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = '#3E8E41';
-    ctx.beginPath();
-    ctx.ellipse(cx + 2, cy - cell / 3, 3.5, 2, -0.6, 0, Math.PI * 2);
+    ctx.arc(cx - 3, cy - 3, 1.6, 0, Math.PI * 2);
     ctx.fill();
   }
 
   function drawSnake() {
+    const theme = THEMES[level];
+
     snake.forEach((seg, i) => {
       if (i === 0) {
-        drawRoundedCell(seg.x, seg.y, '#FFD93D', 1);
+        ctx.save();
+        ctx.shadowColor = theme.accent;
+        ctx.shadowBlur = 16;
+        drawRoundedCell(seg.x, seg.y, theme.accent, 1);
+        ctx.restore();
       } else {
-        const color = rainbow[i % rainbow.length];
+        const t = Math.min(0.75, i / snake.length);
+        const color = mixColor(theme.accent, theme.boardA, t);
         drawRoundedCell(seg.x, seg.y, color, 3);
       }
     });
 
     const head = snake[0];
-    ctx.fillStyle = '#170B2E';
+    ctx.fillStyle = '#06140F';
     const hx = head.x * cell, hy = head.y * cell;
     const eyeOffsets = getEyeOffsets(dir);
     eyeOffsets.forEach(([ex, ey]) => {
