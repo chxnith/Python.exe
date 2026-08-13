@@ -261,9 +261,9 @@ body.level2 {
   letter-spacing: 0.5px;
   padding: 9px 24px;
   border-radius: 999px;
-  background: var(--accent2);
-  color: #0A0620;
-  box-shadow: 0 10px 30px -6px var(--accent2-soft);
+  background: var(--accent);
+  color: #06140F;
+  box-shadow: 0 10px 30px -6px var(--accent-soft);
   opacity: 1;
   transition: opacity 0.7s ease, transform 0.7s ease;
   pointer-events: none;
