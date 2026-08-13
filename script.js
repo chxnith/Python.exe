@@ -25,11 +25,11 @@
       grid: 'rgba(53, 230, 160, 0.06)',
     },
     2: {
-      accent: '#8C6BFF',
-      accentDark: '#5A3FCC',
-      boardA: '#171327',
-      boardB: '#12101F',
-      grid: 'rgba(140, 107, 255, 0.07)',
+      accent: '#35E6A0',
+      accentDark: '#0FA36F',
+      boardA: '#111623',
+      boardB: '#0D111C',
+      grid: 'rgba(53, 230, 160, 0.06)',
     },
   };
   const BERRY = '#FF5C7A';
@@ -136,7 +136,7 @@
     dir = { x: 1, y: 0 };
     nextDir = { x: 1, y: 0 };
     score = 0;
-    speedMs = 130;
+    speedMs = 150;
     particles = [];
     scoreEl.textContent = score;
     level = 1;
@@ -149,7 +149,9 @@
     if (level === 1 && score >= LEVEL2_SCORE) {
       level = 2;
       levelEl.textContent = level;
-      document.body.classList.add('level2');
+      speedMs = Math.max(40, speedMs / 1.25);
+      clearInterval(loopHandle);
+      loopHandle = setInterval(step, speedMs);
       playLevelUpSound();
       showLevelUpToast();
     }
