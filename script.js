@@ -136,7 +136,7 @@
     dir = { x: 1, y: 0 };
     nextDir = { x: 1, y: 0 };
     score = 0;
-    speedMs = 300;
+    speedMs = 250;
     particles = [];
     scoreEl.textContent = score;
     level = 1;
