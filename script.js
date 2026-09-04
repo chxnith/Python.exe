@@ -155,12 +155,14 @@
       speedMs = Math.max(40, speedMs / 1.25);
       clearInterval(loopHandle);
       loopHandle = setInterval(step, speedMs);
+      snake = snake.slice(0, 3);
       playLevelUpSound();
       showLevelUpToast('LEVEL 2!');
     } else if (level === 2 && score >= LEVEL3_SCORE) {
       level = 3;
       levelEl.textContent = level;
       placeObstacle();
+      snake = snake.slice(0, 3);
       playLevelUpSound();
       showLevelUpToast('LEVEL 3! Watch the tree');
     }
