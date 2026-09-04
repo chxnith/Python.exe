@@ -15,6 +15,7 @@
 
   const levelEl = document.getElementById('level');
   const LEVEL2_SCORE = 100;
+  const LEVEL3_SCORE = 250;
 
   const THEMES = {
     1: {
@@ -57,6 +58,7 @@
   let snake, dir, nextDir, food, score, best, running, paused, speedMs, loopHandle;
   let particles = [];
   let level = 1;
+  let obstacle = null;
 
   best = Number(localStorage.getItem('neonSnakeBest') || 0);
   bestEl.textContent = best;
@@ -141,6 +143,7 @@
     scoreEl.textContent = score;
     level = 1;
     levelEl.textContent = level;
+    obstacle = null;
     document.body.classList.remove('level2');
     placeFood();
   }
@@ -153,14 +156,35 @@
       clearInterval(loopHandle);
       loopHandle = setInterval(step, speedMs);
       playLevelUpSound();
-      showLevelUpToast();
+      showLevelUpToast('LEVEL 2!');
+    } else if (level === 2 && score >= LEVEL3_SCORE) {
+      level = 3;
+      levelEl.textContent = level;
+      placeObstacle();
+      playLevelUpSound();
+      showLevelUpToast('LEVEL 3! Watch the tree');
     }
   }
 
-  function showLevelUpToast() {
+  function placeObstacle() {
+    const center = { x: Math.floor(cols / 2), y: Math.floor(rows / 2) };
+    const candidates = [
+      center,
+      { x: center.x + 1, y: center.y },
+      { x: center.x - 1, y: center.y },
+      { x: center.x, y: center.y + 1 },
+      { x: center.x, y: center.y - 1 },
+    ];
+    obstacle = candidates.find(pos =>
+      !snake.some(s => s.x === pos.x && s.y === pos.y) &&
+      !(food.x === pos.x && food.y === pos.y)
+    ) || center;
+  }
+
+  function showLevelUpToast(message) {
     const toast = document.createElement('div');
     toast.className = 'level-toast';
-    toast.textContent = 'LEVEL 2!';
+    toast.textContent = message;
     document.querySelector('.board-wrap').appendChild(toast);
     setTimeout(() => toast.classList.add('fade'), 1000);
     setTimeout(() => toast.remove(), 1700);
@@ -170,7 +194,10 @@
     let pos;
     do {
       pos = { x: Math.floor(Math.random() * cols), y: Math.floor(Math.random() * rows) };
-    } while (snake.some(s => s.x === pos.x && s.y === pos.y));
+    } while (
+      snake.some(s => s.x === pos.x && s.y === pos.y) ||
+      (obstacle && obstacle.x === pos.x && obstacle.y === pos.y)
+    );
     food = pos;
     food.hue = 42 + (Math.random() * 14 - 7);
   }
@@ -286,6 +313,56 @@
     ctx.restore();
   }
 
+  function drawObstacle() {
+    if (!obstacle) return;
+    const cx = obstacle.x * cell + cell / 2;
+    const cy = obstacle.y * cell + cell / 2;
+
+    const warn = ctx.createRadialGradient(cx, cy, 1, cx, cy, cell * 0.8);
+    warn.addColorStop(0, 'rgba(255, 92, 122, 0.22)');
+    warn.addColorStop(1, 'rgba(255, 92, 122, 0)');
+    ctx.fillStyle = warn;
+    ctx.beginPath();
+    ctx.arc(cx, cy, cell * 0.8, 0, Math.PI * 2);
+    ctx.fill();
+
+    // shadow
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+    ctx.beginPath();
+    ctx.ellipse(cx, cy + cell * 0.32, cell * 0.4, cell * 0.14, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // trunk
+    const trunkGrad = ctx.createLinearGradient(cx - 4, cy, cx + 4, cy + cell * 0.3);
+    trunkGrad.addColorStop(0, '#8A5A34');
+    trunkGrad.addColorStop(1, '#4E3018');
+    ctx.fillStyle = trunkGrad;
+    ctx.fillRect(cx - 3.5, cy - 2, 7, cell * 0.3);
+
+    // canopy (beveled sphere)
+    const r = cell * 0.34;
+    const canopyCy = cy - cell * 0.14;
+    const canopy = ctx.createRadialGradient(cx - r * 0.35, canopyCy - r * 0.35, 1, cx, canopyCy, r);
+    canopy.addColorStop(0, '#5FD98A');
+    canopy.addColorStop(0.55, '#2FA85C');
+    canopy.addColorStop(1, '#176B37');
+    ctx.fillStyle = canopy;
+    ctx.beginPath();
+    ctx.arc(cx, canopyCy, r, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = 'rgba(255, 92, 122, 0.55)';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.arc(cx, canopyCy, r + 1.5, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    ctx.beginPath();
+    ctx.ellipse(cx - r * 0.35, canopyCy - r * 0.35, r * 0.3, r * 0.18, -0.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
   function drawSnake() {
     const theme = THEMES[level];
 
@@ -385,7 +462,11 @@
     dir = nextDir;
     const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
 
-    if (head.x < 0 || head.x >= cols || head.y < 0 || head.y >= rows || snake.some(s => s.x === head.x && s.y === head.y)) {
+    if (
+      head.x < 0 || head.x >= cols || head.y < 0 || head.y >= rows ||
+      snake.some(s => s.x === head.x && s.y === head.y) ||
+      (obstacle && head.x === obstacle.x && head.y === obstacle.y)
+    ) {
       gameOver();
       return;
     }
@@ -409,6 +490,7 @@
 
   function render(t) {
     drawBoard();
+    drawObstacle();
     drawFood(t);
     drawSnake();
     drawParticles();
