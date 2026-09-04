@@ -201,6 +201,22 @@ canvas {
 .overlay button:hover { filter: brightness(1.08); }
 .overlay button:active { transform: scale(0.96); }
 
+.theme-toggle {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 8px 18px;
+  border-radius: 999px;
+  border: 1px solid var(--panel-border);
+  background: var(--panel);
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.2s ease, transform 0.15s ease, background 0.4s ease, color 0.4s ease;
+}
+
+.theme-toggle:hover { border-color: var(--accent); }
+.theme-toggle:active { transform: scale(0.95); }
+
 .controls-hint {
   font-size: 11.5px;
   color: var(--text-dim);
@@ -273,4 +289,37 @@ body.level2 {
 .level-toast.fade {
   opacity: 0;
   transform: translateX(-50%) translateY(-10px);
+}
+
+/* --- Light theme --- */
+body.theme-light {
+  --bg: #F3F5FA;
+  --panel: rgba(15, 23, 42, 0.05);
+  --panel-border: rgba(15, 23, 42, 0.12);
+  --text: #171B24;
+  --text-dim: #64708A;
+  --accent: #0FA36F;
+  --accent-soft: rgba(15, 163, 111, 0.18);
+  --accent2: #6E4FE0;
+  --accent2-soft: rgba(110, 79, 224, 0.18);
+  background:
+    radial-gradient(circle at 18% 12%, rgba(15, 163, 111, 0.08) 0%, transparent 45%),
+    radial-gradient(circle at 82% 88%, rgba(110, 79, 224, 0.06) 0%, transparent 50%),
+    var(--bg);
+}
+
+body.theme-light canvas {
+  background: #E7EAF2;
+}
+
+body.theme-light .overlay {
+  background: rgba(255, 255, 255, 0.92);
+}
+
+body.theme-light .board-wrap {
+  background: linear-gradient(160deg, rgba(15, 23, 42, 0.06), rgba(15, 23, 42, 0.01));
+}
+
+body.theme-light .overlay button {
+  color: #FFFFFF;
 }
