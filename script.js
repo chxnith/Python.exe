@@ -14,24 +14,25 @@
   const dpad = document.getElementById('dpad');
 
   const levelEl = document.getElementById('level');
-  const LEVEL2_SCORE = 100;
 
-  const THEMES = {
-    1: {
-      accent: '#35E6A0',
-      accentDark: '#0FA36F',
-      boardA: '#111623',
-      boardB: '#0D111C',
-      grid: 'rgba(53, 230, 160, 0.06)',
-    },
-    2: {
-      accent: '#35E6A0',
-      accentDark: '#0FA36F',
-      boardA: '#111623',
-      boardB: '#0D111C',
-      grid: 'rgba(53, 230, 160, 0.06)',
-    },
+  const THEME_DARK = {
+    accent: '#35E6A0',
+    accentDark: '#0FA36F',
+    boardA: '#111623',
+    boardB: '#0D111C',
+    grid: 'rgba(53, 230, 160, 0.06)',
   };
+  const THEME_LIGHT = {
+    accent: '#0FA36F',
+    accentDark: '#0B7A54',
+    boardA: '#EDEFF5',
+    boardB: '#E2E5EE',
+    grid: 'rgba(15, 163, 111, 0.12)',
+  };
+
+  function currentTheme() {
+    return colorMode === 'light' ? THEME_LIGHT : THEME_DARK;
+  }
   const BERRY = '#FF5C7A';
 
   function colorToRgb(c) {
@@ -57,6 +58,8 @@
   let snake, dir, nextDir, food, score, best, running, paused, speedMs, loopHandle;
   let particles = [];
   let level = 1;
+  let obstacle = null;
+  let colorMode = localStorage.getItem('neonSnakeTheme') || 'dark';
 
   best = Number(localStorage.getItem('neonSnakeBest') || 0);
   bestEl.textContent = best;
@@ -127,6 +130,23 @@
     if (!muted) getAudioCtx().resume();
   });
 
+  const themeToggleBtn = document.getElementById('themeToggleBtn');
+
+  function applyColorMode() {
+    document.body.classList.toggle('theme-light', colorMode === 'light');
+    themeToggleBtn.textContent = colorMode === 'light' ? '☀️ Light' : '🌙 Dark';
+    localStorage.setItem('neonSnakeTheme', colorMode);
+    drawBoard();
+    drawObstacle(performance.now());
+    drawFood(performance.now());
+    drawSnake();
+  }
+
+  themeToggleBtn.addEventListener('click', () => {
+    colorMode = colorMode === 'light' ? 'dark' : 'light';
+    applyColorMode();
+  });
+
   function resetState() {
     snake = [
       { x: 9, y: 10 },
@@ -141,26 +161,78 @@
     scoreEl.textContent = score;
     level = 1;
     levelEl.textContent = level;
+    obstacle = null;
     document.body.classList.remove('level2');
     placeFood();
   }
 
   function checkLevelUp() {
-    if (level === 1 && score >= LEVEL2_SCORE) {
-      level = 2;
-      levelEl.textContent = level;
-      speedMs = Math.max(40, speedMs / 1.25);
-      clearInterval(loopHandle);
-      loopHandle = setInterval(step, speedMs);
-      playLevelUpSound();
-      showLevelUpToast();
+    while (score >= level * 100) {
+      levelUpTo(level + 1);
     }
   }
 
-  function showLevelUpToast() {
+  function levelUpTo(newLevel) {
+    const cameFromLevel1 = level === 1;
+    level = newLevel;
+    levelEl.textContent = level;
+    snake = snake.slice(0, 3);
+
+    if (cameFromLevel1) {
+      speedMs = Math.max(40, speedMs / 1.25);
+      clearInterval(loopHandle);
+      loopHandle = setInterval(step, speedMs);
+    }
+
+    if (level === 3 && !obstacle) {
+      placeObstacle();
+    }
+
+    playLevelUpSound();
+    showLevelUpToast(level === 3 ? 'LEVEL 3! Hazard ahead' : `LEVEL ${level}!`);
+  }
+
+  function placeObstacle() {
+    const topLeft = { x: Math.floor(cols / 2) - 1, y: Math.floor(rows / 2) - 1 };
+    const candidates = [
+      topLeft,
+      { x: topLeft.x + 1, y: topLeft.y },
+      { x: topLeft.x - 1, y: topLeft.y },
+      { x: topLeft.x, y: topLeft.y + 1 },
+      { x: topLeft.x, y: topLeft.y - 1 },
+      { x: topLeft.x + 2, y: topLeft.y },
+      { x: topLeft.x - 2, y: topLeft.y },
+    ];
+
+    const isFree = (top) => {
+      if (top.x < 0 || top.y < 0 || top.x + 1 >= cols || top.y + 1 >= rows) return false;
+      const cells = obstacleCellsAt(top);
+      return cells.every(c =>
+        !snake.some(s => s.x === c.x && s.y === c.y) &&
+        !(food.x === c.x && food.y === c.y)
+      );
+    };
+
+    obstacle = candidates.find(isFree) || topLeft;
+  }
+
+  function obstacleCellsAt(top) {
+    return [
+      { x: top.x, y: top.y },
+      { x: top.x + 1, y: top.y },
+      { x: top.x, y: top.y + 1 },
+      { x: top.x + 1, y: top.y + 1 },
+    ];
+  }
+
+  function obstacleCells() {
+    return obstacle ? obstacleCellsAt(obstacle) : [];
+  }
+
+  function showLevelUpToast(message) {
     const toast = document.createElement('div');
     toast.className = 'level-toast';
-    toast.textContent = 'LEVEL 2!';
+    toast.textContent = message;
     document.querySelector('.board-wrap').appendChild(toast);
     setTimeout(() => toast.classList.add('fade'), 1000);
     setTimeout(() => toast.remove(), 1700);
@@ -170,7 +242,10 @@
     let pos;
     do {
       pos = { x: Math.floor(Math.random() * cols), y: Math.floor(Math.random() * rows) };
-    } while (snake.some(s => s.x === pos.x && s.y === pos.y));
+    } while (
+      snake.some(s => s.x === pos.x && s.y === pos.y) ||
+      obstacleCells().some(c => c.x === pos.x && c.y === pos.y)
+    );
     food = pos;
     food.hue = 42 + (Math.random() * 14 - 7);
   }
@@ -193,7 +268,7 @@
   }
 
   function drawBoard() {
-    const theme = THEMES[level];
+    const theme = currentTheme();
 
     for (let y = 0; y < rows; y++) {
       for (let x = 0; x < cols; x++) {
@@ -286,8 +361,81 @@
     ctx.restore();
   }
 
+  function drawObstacle(t) {
+    if (!obstacle) return;
+    const px = obstacle.x * cell;
+    const py = obstacle.y * cell;
+    const w = cell * 2;
+    const h = cell * 2;
+    const cx = px + w / 2;
+    const cy = py + h / 2;
+    const pulse = 0.5 + Math.sin(t / 300) * 0.5;
+
+    const glowR = w * 0.75 + pulse * 4;
+    const glow = ctx.createRadialGradient(cx, cy, 4, cx, cy, glowR);
+    glow.addColorStop(0, `rgba(255, 92, 122, ${0.26 + pulse * 0.12})`);
+    glow.addColorStop(1, 'rgba(255, 92, 122, 0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(cx, cy, glowR, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+    ctx.beginPath();
+    ctx.ellipse(cx, py + h + 3, w * 0.4, cell * 0.16, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    const r = 8;
+    const pad = 3;
+    const bx = px + pad, by = py + pad, bw = w - pad * 2, bh = h - pad * 2;
+
+    const panelPath = () => {
+      ctx.beginPath();
+      ctx.moveTo(bx + r, by);
+      ctx.arcTo(bx + bw, by, bx + bw, by + bh, r);
+      ctx.arcTo(bx + bw, by + bh, bx, by + bh, r);
+      ctx.arcTo(bx, by + bh, bx, by, r);
+      ctx.arcTo(bx, by, bx + bw, by, r);
+      ctx.closePath();
+    };
+
+    ctx.save();
+    panelPath();
+    ctx.clip();
+
+    const base = ctx.createLinearGradient(bx, by, bx + bw, by + bh);
+    base.addColorStop(0, '#3D2530');
+    base.addColorStop(1, '#170D12');
+    ctx.fillStyle = base;
+    ctx.fillRect(bx, by, bw, bh);
+
+    ctx.fillStyle = `rgba(255, 92, 122, ${0.4 + pulse * 0.2})`;
+    const stripeW = 7;
+    for (let sx = -bh; sx < bw + bh; sx += stripeW * 2) {
+      ctx.beginPath();
+      ctx.moveTo(bx + sx, by);
+      ctx.lineTo(bx + sx + stripeW, by);
+      ctx.lineTo(bx + sx + stripeW - bh, by + bh);
+      ctx.lineTo(bx + sx - bh, by + bh);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    ctx.fillStyle = 'rgba(255,255,255,0.1)';
+    ctx.beginPath();
+    ctx.ellipse(bx + bw * 0.28, by + bh * 0.22, bw * 0.22, bh * 0.12, -0.4, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+
+    ctx.strokeStyle = `rgba(255, 92, 122, ${0.55 + pulse * 0.35})`;
+    ctx.lineWidth = 1.6;
+    panelPath();
+    ctx.stroke();
+  }
+
   function drawSnake() {
-    const theme = THEMES[level];
+    const theme = currentTheme();
 
     snake.forEach((seg, i) => {
       const pad = i === 0 ? 1 : 3;
@@ -385,7 +533,11 @@
     dir = nextDir;
     const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
 
-    if (head.x < 0 || head.x >= cols || head.y < 0 || head.y >= rows || snake.some(s => s.x === head.x && s.y === head.y)) {
+    if (
+      head.x < 0 || head.x >= cols || head.y < 0 || head.y >= rows ||
+      snake.some(s => s.x === head.x && s.y === head.y) ||
+      obstacleCells().some(c => c.x === head.x && c.y === head.y)
+    ) {
       gameOver();
       return;
     }
@@ -409,6 +561,7 @@
 
   function render(t) {
     drawBoard();
+    drawObstacle(t);
     drawFood(t);
     drawSnake();
     drawParticles();
@@ -490,7 +643,5 @@
   startBtn.addEventListener('click', startGame);
 
   resetState();
-  drawBoard();
-  drawFood(0);
-  drawSnake();
+  applyColorMode();
 })();
