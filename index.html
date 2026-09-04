@@ -35,6 +35,14 @@
       <div class="overlay show" id="overlay">
         <h2 id="overlayTitle">Ready?</h2>
         <p id="overlayText">Arrow keys or WASD to move. Eat the berries, don't bite yourself.</p>
+        <div class="snake-color-picker" id="snakeColorPicker">
+          <span class="picker-label">Snake colour</span>
+          <div class="swatch-row">
+            <button class="color-swatch" data-color="red" style="--swatch: #FF5C5C" aria-label="Red snake"></button>
+            <button class="color-swatch" data-color="blue" style="--swatch: #4DA3FF" aria-label="Blue snake"></button>
+            <button class="color-swatch" data-color="yellow" style="--swatch: #FFDD57" aria-label="Yellow snake"></button>
+          </div>
+        </div>
         <button class="theme-toggle" id="themeToggleBtn" type="button">🌙 Dark</button>
         <button id="startBtn">Start Game</button>
       </div>
