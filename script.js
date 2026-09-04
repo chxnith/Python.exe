@@ -15,13 +15,24 @@
 
   const levelEl = document.getElementById('level');
 
-  const THEME = {
+  const THEME_DARK = {
     accent: '#35E6A0',
     accentDark: '#0FA36F',
     boardA: '#111623',
     boardB: '#0D111C',
     grid: 'rgba(53, 230, 160, 0.06)',
   };
+  const THEME_LIGHT = {
+    accent: '#0FA36F',
+    accentDark: '#0B7A54',
+    boardA: '#EDEFF5',
+    boardB: '#E2E5EE',
+    grid: 'rgba(15, 163, 111, 0.12)',
+  };
+
+  function currentTheme() {
+    return colorMode === 'light' ? THEME_LIGHT : THEME_DARK;
+  }
   const BERRY = '#FF5C7A';
 
   function colorToRgb(c) {
@@ -48,6 +59,7 @@
   let particles = [];
   let level = 1;
   let obstacle = null;
+  let colorMode = localStorage.getItem('neonSnakeTheme') || 'dark';
 
   best = Number(localStorage.getItem('neonSnakeBest') || 0);
   bestEl.textContent = best;
@@ -116,6 +128,23 @@
     localStorage.setItem('gardenSnakeMuted', String(muted));
     muteBtn.textContent = muted ? '🔇' : '🔊';
     if (!muted) getAudioCtx().resume();
+  });
+
+  const themeToggleBtn = document.getElementById('themeToggleBtn');
+
+  function applyColorMode() {
+    document.body.classList.toggle('theme-light', colorMode === 'light');
+    themeToggleBtn.textContent = colorMode === 'light' ? '☀️ Light' : '🌙 Dark';
+    localStorage.setItem('neonSnakeTheme', colorMode);
+    drawBoard();
+    drawObstacle();
+    drawFood(performance.now());
+    drawSnake();
+  }
+
+  themeToggleBtn.addEventListener('click', () => {
+    colorMode = colorMode === 'light' ? 'dark' : 'light';
+    applyColorMode();
   });
 
   function resetState() {
@@ -217,7 +246,7 @@
   }
 
   function drawBoard() {
-    const theme = THEME;
+    const theme = currentTheme();
 
     for (let y = 0; y < rows; y++) {
       for (let x = 0; x < cols; x++) {
@@ -361,7 +390,7 @@
   }
 
   function drawSnake() {
-    const theme = THEME;
+    const theme = currentTheme();
 
     snake.forEach((seg, i) => {
       const pad = i === 0 ? 1 : 3;
@@ -569,7 +598,5 @@
   startBtn.addEventListener('click', startGame);
 
   resetState();
-  drawBoard();
-  drawFood(0);
-  drawSnake();
+  applyColorMode();
 })();
