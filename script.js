@@ -14,24 +14,13 @@
   const dpad = document.getElementById('dpad');
 
   const levelEl = document.getElementById('level');
-  const LEVEL2_SCORE = 100;
-  const LEVEL3_SCORE = 250;
 
-  const THEMES = {
-    1: {
-      accent: '#35E6A0',
-      accentDark: '#0FA36F',
-      boardA: '#111623',
-      boardB: '#0D111C',
-      grid: 'rgba(53, 230, 160, 0.06)',
-    },
-    2: {
-      accent: '#35E6A0',
-      accentDark: '#0FA36F',
-      boardA: '#111623',
-      boardB: '#0D111C',
-      grid: 'rgba(53, 230, 160, 0.06)',
-    },
+  const THEME = {
+    accent: '#35E6A0',
+    accentDark: '#0FA36F',
+    boardA: '#111623',
+    boardB: '#0D111C',
+    grid: 'rgba(53, 230, 160, 0.06)',
   };
   const BERRY = '#FF5C7A';
 
@@ -149,23 +138,29 @@
   }
 
   function checkLevelUp() {
-    if (level === 1 && score >= LEVEL2_SCORE) {
-      level = 2;
-      levelEl.textContent = level;
+    while (score >= level * 100) {
+      levelUpTo(level + 1);
+    }
+  }
+
+  function levelUpTo(newLevel) {
+    const cameFromLevel1 = level === 1;
+    level = newLevel;
+    levelEl.textContent = level;
+    snake = snake.slice(0, 3);
+
+    if (cameFromLevel1) {
       speedMs = Math.max(40, speedMs / 1.25);
       clearInterval(loopHandle);
       loopHandle = setInterval(step, speedMs);
-      snake = snake.slice(0, 3);
-      playLevelUpSound();
-      showLevelUpToast('LEVEL 2!');
-    } else if (level === 2 && score >= LEVEL3_SCORE) {
-      level = 3;
-      levelEl.textContent = level;
-      placeObstacle();
-      snake = snake.slice(0, 3);
-      playLevelUpSound();
-      showLevelUpToast('LEVEL 3! Watch the tree');
     }
+
+    if (level === 3 && !obstacle) {
+      placeObstacle();
+    }
+
+    playLevelUpSound();
+    showLevelUpToast(level === 3 ? 'LEVEL 3! Watch the tree' : `LEVEL ${level}!`);
   }
 
   function placeObstacle() {
@@ -222,7 +217,7 @@
   }
 
   function drawBoard() {
-    const theme = THEMES[level];
+    const theme = THEME;
 
     for (let y = 0; y < rows; y++) {
       for (let x = 0; x < cols; x++) {
@@ -366,7 +361,7 @@
   }
 
   function drawSnake() {
-    const theme = THEMES[level];
+    const theme = THEME;
 
     snake.forEach((seg, i) => {
       const pad = i === 0 ? 1 : 3;
