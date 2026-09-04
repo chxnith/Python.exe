@@ -137,7 +137,7 @@
     themeToggleBtn.textContent = colorMode === 'light' ? '☀️ Light' : '🌙 Dark';
     localStorage.setItem('neonSnakeTheme', colorMode);
     drawBoard();
-    drawObstacle();
+    drawObstacle(performance.now());
     drawFood(performance.now());
     drawSnake();
   }
@@ -189,22 +189,44 @@
     }
 
     playLevelUpSound();
-    showLevelUpToast(level === 3 ? 'LEVEL 3! Watch the tree' : `LEVEL ${level}!`);
+    showLevelUpToast(level === 3 ? 'LEVEL 3! Hazard ahead' : `LEVEL ${level}!`);
   }
 
   function placeObstacle() {
-    const center = { x: Math.floor(cols / 2), y: Math.floor(rows / 2) };
+    const topLeft = { x: Math.floor(cols / 2) - 1, y: Math.floor(rows / 2) - 1 };
     const candidates = [
-      center,
-      { x: center.x + 1, y: center.y },
-      { x: center.x - 1, y: center.y },
-      { x: center.x, y: center.y + 1 },
-      { x: center.x, y: center.y - 1 },
+      topLeft,
+      { x: topLeft.x + 1, y: topLeft.y },
+      { x: topLeft.x - 1, y: topLeft.y },
+      { x: topLeft.x, y: topLeft.y + 1 },
+      { x: topLeft.x, y: topLeft.y - 1 },
+      { x: topLeft.x + 2, y: topLeft.y },
+      { x: topLeft.x - 2, y: topLeft.y },
     ];
-    obstacle = candidates.find(pos =>
-      !snake.some(s => s.x === pos.x && s.y === pos.y) &&
-      !(food.x === pos.x && food.y === pos.y)
-    ) || center;
+
+    const isFree = (top) => {
+      if (top.x < 0 || top.y < 0 || top.x + 1 >= cols || top.y + 1 >= rows) return false;
+      const cells = obstacleCellsAt(top);
+      return cells.every(c =>
+        !snake.some(s => s.x === c.x && s.y === c.y) &&
+        !(food.x === c.x && food.y === c.y)
+      );
+    };
+
+    obstacle = candidates.find(isFree) || topLeft;
+  }
+
+  function obstacleCellsAt(top) {
+    return [
+      { x: top.x, y: top.y },
+      { x: top.x + 1, y: top.y },
+      { x: top.x, y: top.y + 1 },
+      { x: top.x + 1, y: top.y + 1 },
+    ];
+  }
+
+  function obstacleCells() {
+    return obstacle ? obstacleCellsAt(obstacle) : [];
   }
 
   function showLevelUpToast(message) {
@@ -222,7 +244,7 @@
       pos = { x: Math.floor(Math.random() * cols), y: Math.floor(Math.random() * rows) };
     } while (
       snake.some(s => s.x === pos.x && s.y === pos.y) ||
-      (obstacle && obstacle.x === pos.x && obstacle.y === pos.y)
+      obstacleCells().some(c => c.x === pos.x && c.y === pos.y)
     );
     food = pos;
     food.hue = 42 + (Math.random() * 14 - 7);
@@ -339,54 +361,77 @@
     ctx.restore();
   }
 
-  function drawObstacle() {
+  function drawObstacle(t) {
     if (!obstacle) return;
-    const cx = obstacle.x * cell + cell / 2;
-    const cy = obstacle.y * cell + cell / 2;
+    const px = obstacle.x * cell;
+    const py = obstacle.y * cell;
+    const w = cell * 2;
+    const h = cell * 2;
+    const cx = px + w / 2;
+    const cy = py + h / 2;
+    const pulse = 0.5 + Math.sin(t / 300) * 0.5;
 
-    const warn = ctx.createRadialGradient(cx, cy, 1, cx, cy, cell * 0.8);
-    warn.addColorStop(0, 'rgba(255, 92, 122, 0.22)');
-    warn.addColorStop(1, 'rgba(255, 92, 122, 0)');
-    ctx.fillStyle = warn;
+    const glowR = w * 0.75 + pulse * 4;
+    const glow = ctx.createRadialGradient(cx, cy, 4, cx, cy, glowR);
+    glow.addColorStop(0, `rgba(255, 92, 122, ${0.26 + pulse * 0.12})`);
+    glow.addColorStop(1, 'rgba(255, 92, 122, 0)');
+    ctx.fillStyle = glow;
     ctx.beginPath();
-    ctx.arc(cx, cy, cell * 0.8, 0, Math.PI * 2);
+    ctx.arc(cx, cy, glowR, 0, Math.PI * 2);
     ctx.fill();
 
-    // shadow
     ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
     ctx.beginPath();
-    ctx.ellipse(cx, cy + cell * 0.32, cell * 0.4, cell * 0.14, 0, 0, Math.PI * 2);
+    ctx.ellipse(cx, py + h + 3, w * 0.4, cell * 0.16, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // trunk
-    const trunkGrad = ctx.createLinearGradient(cx - 4, cy, cx + 4, cy + cell * 0.3);
-    trunkGrad.addColorStop(0, '#8A5A34');
-    trunkGrad.addColorStop(1, '#4E3018');
-    ctx.fillStyle = trunkGrad;
-    ctx.fillRect(cx - 3.5, cy - 2, 7, cell * 0.3);
+    const r = 8;
+    const pad = 3;
+    const bx = px + pad, by = py + pad, bw = w - pad * 2, bh = h - pad * 2;
 
-    // canopy (beveled sphere)
-    const r = cell * 0.34;
-    const canopyCy = cy - cell * 0.14;
-    const canopy = ctx.createRadialGradient(cx - r * 0.35, canopyCy - r * 0.35, 1, cx, canopyCy, r);
-    canopy.addColorStop(0, '#5FD98A');
-    canopy.addColorStop(0.55, '#2FA85C');
-    canopy.addColorStop(1, '#176B37');
-    ctx.fillStyle = canopy;
+    const panelPath = () => {
+      ctx.beginPath();
+      ctx.moveTo(bx + r, by);
+      ctx.arcTo(bx + bw, by, bx + bw, by + bh, r);
+      ctx.arcTo(bx + bw, by + bh, bx, by + bh, r);
+      ctx.arcTo(bx, by + bh, bx, by, r);
+      ctx.arcTo(bx, by, bx + bw, by, r);
+      ctx.closePath();
+    };
+
+    ctx.save();
+    panelPath();
+    ctx.clip();
+
+    const base = ctx.createLinearGradient(bx, by, bx + bw, by + bh);
+    base.addColorStop(0, '#3D2530');
+    base.addColorStop(1, '#170D12');
+    ctx.fillStyle = base;
+    ctx.fillRect(bx, by, bw, bh);
+
+    ctx.fillStyle = `rgba(255, 92, 122, ${0.4 + pulse * 0.2})`;
+    const stripeW = 7;
+    for (let sx = -bh; sx < bw + bh; sx += stripeW * 2) {
+      ctx.beginPath();
+      ctx.moveTo(bx + sx, by);
+      ctx.lineTo(bx + sx + stripeW, by);
+      ctx.lineTo(bx + sx + stripeW - bh, by + bh);
+      ctx.lineTo(bx + sx - bh, by + bh);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    ctx.fillStyle = 'rgba(255,255,255,0.1)';
     ctx.beginPath();
-    ctx.arc(cx, canopyCy, r, 0, Math.PI * 2);
+    ctx.ellipse(bx + bw * 0.28, by + bh * 0.22, bw * 0.22, bh * 0.12, -0.4, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.strokeStyle = 'rgba(255, 92, 122, 0.55)';
-    ctx.lineWidth = 1.4;
-    ctx.beginPath();
-    ctx.arc(cx, canopyCy, r + 1.5, 0, Math.PI * 2);
+    ctx.restore();
+
+    ctx.strokeStyle = `rgba(255, 92, 122, ${0.55 + pulse * 0.35})`;
+    ctx.lineWidth = 1.6;
+    panelPath();
     ctx.stroke();
-
-    ctx.fillStyle = 'rgba(255,255,255,0.35)';
-    ctx.beginPath();
-    ctx.ellipse(cx - r * 0.35, canopyCy - r * 0.35, r * 0.3, r * 0.18, -0.5, 0, Math.PI * 2);
-    ctx.fill();
   }
 
   function drawSnake() {
@@ -491,7 +536,7 @@
     if (
       head.x < 0 || head.x >= cols || head.y < 0 || head.y >= rows ||
       snake.some(s => s.x === head.x && s.y === head.y) ||
-      (obstacle && head.x === obstacle.x && head.y === obstacle.y)
+      obstacleCells().some(c => c.x === head.x && c.y === head.y)
     ) {
       gameOver();
       return;
@@ -516,7 +561,7 @@
 
   function render(t) {
     drawBoard();
-    drawObstacle();
+    drawObstacle(t);
     drawFood(t);
     drawSnake();
     drawParticles();
