@@ -36,13 +36,14 @@
   const BERRY = '#FF5C7A';
 
   const SNAKE_COLORS = {
-    red: '#FF5C5C',
+    green: '#35E6A0',
     blue: '#4DA3FF',
-    yellow: '#FFDD57',
+    purple: '#B24DFF',
+    orange: '#FFA53D',
   };
 
   function currentSnakeColor() {
-    return SNAKE_COLORS[snakeColor] || SNAKE_COLORS.red;
+    return SNAKE_COLORS[snakeColor] || SNAKE_COLORS.green;
   }
 
   function colorToRgb(c) {
@@ -70,14 +71,14 @@
   let level = 1;
   let obstacle = null;
   let colorMode = localStorage.getItem('neonSnakeTheme') || 'dark';
-  let snakeColor = localStorage.getItem('neonSnakeColor') || 'red';
+  let snakeColor = localStorage.getItem('neonSnakeColor') || 'green';
 
   best = Number(localStorage.getItem('neonSnakeBest') || 0);
   bestEl.textContent = best;
 
   const muteBtn = document.getElementById('muteBtn');
   let muted = localStorage.getItem('gardenSnakeMuted') === 'true';
-  muteBtn.textContent = muted ? '🔇' : '🔊';
+  muteBtn.classList.toggle('muted', muted);
 
   let audioCtx = null;
   function getAudioCtx() {
@@ -137,7 +138,7 @@
   muteBtn.addEventListener('click', () => {
     muted = !muted;
     localStorage.setItem('gardenSnakeMuted', String(muted));
-    muteBtn.textContent = muted ? '🔇' : '🔊';
+    muteBtn.classList.toggle('muted', muted);
     if (!muted) getAudioCtx().resume();
   });
 
@@ -611,7 +612,7 @@
     }
     overlayTitle.textContent = 'Game Over';
     overlayText.textContent = `Score: ${score}. Tap start to try again.`;
-    startBtn.textContent = 'Play Again';
+    startBtn.innerHTML = '<span class="play-icon">▶</span> Play Again';
     overlay.classList.add('show');
   }
 
