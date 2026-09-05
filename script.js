@@ -35,6 +35,16 @@
   }
   const BERRY = '#FF5C7A';
 
+  const SNAKE_COLORS = {
+    red: '#FF5C5C',
+    blue: '#4DA3FF',
+    yellow: '#FFDD57',
+  };
+
+  function currentSnakeColor() {
+    return SNAKE_COLORS[snakeColor] || SNAKE_COLORS.red;
+  }
+
   function colorToRgb(c) {
     if (c.startsWith('#')) {
       const n = parseInt(c.slice(1), 16);
@@ -60,6 +70,7 @@
   let level = 1;
   let obstacle = null;
   let colorMode = localStorage.getItem('neonSnakeTheme') || 'dark';
+  let snakeColor = localStorage.getItem('neonSnakeColor') || 'red';
 
   best = Number(localStorage.getItem('neonSnakeBest') || 0);
   bestEl.textContent = best;
@@ -145,6 +156,26 @@
   themeToggleBtn.addEventListener('click', () => {
     colorMode = colorMode === 'light' ? 'dark' : 'light';
     applyColorMode();
+  });
+
+  const colorSwatches = document.querySelectorAll('.color-swatch');
+
+  function applySnakeColor() {
+    colorSwatches.forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.color === snakeColor);
+    });
+    localStorage.setItem('neonSnakeColor', snakeColor);
+    drawBoard();
+    drawObstacle(performance.now());
+    drawFood(performance.now());
+    drawSnake();
+  }
+
+  colorSwatches.forEach(btn => {
+    btn.addEventListener('click', () => {
+      snakeColor = btn.dataset.color;
+      applySnakeColor();
+    });
   });
 
   function resetState() {
@@ -436,6 +467,7 @@
 
   function drawSnake() {
     const theme = currentTheme();
+    const accent = currentSnakeColor();
 
     snake.forEach((seg, i) => {
       const pad = i === 0 ? 1 : 3;
@@ -450,14 +482,14 @@
       const px = seg.x * cell, py = seg.y * cell;
 
       if (i === 0) {
-        const light = lighten(theme.accent, 0.4);
-        const dark = darken(theme.accent, 0.35);
+        const light = lighten(accent, 0.4);
+        const dark = darken(accent, 0.35);
         const grad = ctx.createLinearGradient(px, py, px + cell, py + cell);
         grad.addColorStop(0, light);
         grad.addColorStop(1, dark);
 
         ctx.save();
-        ctx.shadowColor = theme.accent;
+        ctx.shadowColor = accent;
         ctx.shadowBlur = 16;
         drawRoundedCell(seg.x, seg.y, grad, 1);
         ctx.restore();
@@ -468,7 +500,7 @@
         ctx.fill();
       } else {
         const t = Math.min(0.75, i / snake.length);
-        const base = mixColor(theme.accent, theme.boardA, t);
+        const base = mixColor(accent, theme.boardA, t);
         const light = lighten(base, 0.22);
         const dark = darken(base, 0.32);
         const grad = ctx.createLinearGradient(px, py, px + cell, py + cell);
@@ -644,4 +676,5 @@
 
   resetState();
   applyColorMode();
+  applySnakeColor();
 })();
