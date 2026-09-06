@@ -528,17 +528,78 @@
 
     if (score > best) {
       const bob = Math.sin((t || 0) / 260) * 2;
-      const cx = hx + cell / 2;
-      const cy = hy - cell * 0.5 + bob;
-      ctx.save();
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.font = `${cell * 0.95}px sans-serif`;
-      ctx.shadowColor = 'rgba(255, 205, 70, 0.85)';
-      ctx.shadowBlur = 10;
-      ctx.fillText('👑', cx, cy);
-      ctx.restore();
+      const crownW = cell * 0.85;
+      let ccx, ccy;
+
+      if (dir.y !== 0) {
+        // Moving vertically: show the crown beside the head instead of on top.
+        ccx = hx + cell * 1.15;
+        ccy = hy + cell * 0.66 + bob;
+      } else {
+        // Moving horizontally: show the crown on top, like a hat.
+        ccx = hx + cell / 2 + bob;
+        ccy = hy - cell * 0.06;
+      }
+
+      drawCrown(ccx, ccy, crownW);
     }
+  }
+
+  function drawCrown(cx, cy, w) {
+    const h = w * 0.78;
+    const bandH = h * 0.34;
+    const peakH = h - bandH;
+    const bandTopY = cy - bandH;
+    const leftTipX = cx - w / 2, rightTipX = cx + w / 2;
+    const leftValleyX = cx - w * 0.27, rightValleyX = cx + w * 0.27;
+    const sideTipY = bandTopY - peakH * 0.42;
+    const centerTipY = bandTopY - peakH;
+
+    ctx.save();
+    ctx.shadowColor = 'rgba(255, 205, 70, 0.8)';
+    ctx.shadowBlur = 9;
+
+    ctx.beginPath();
+    ctx.moveTo(cx - w / 2, cy);
+    ctx.lineTo(leftTipX, sideTipY);
+    ctx.lineTo(leftValleyX, bandTopY);
+    ctx.lineTo(cx, centerTipY);
+    ctx.lineTo(rightValleyX, bandTopY);
+    ctx.lineTo(rightTipX, sideTipY);
+    ctx.lineTo(cx + w / 2, cy);
+    ctx.closePath();
+
+    const grad = ctx.createLinearGradient(cx, centerTipY, cx, cy);
+    grad.addColorStop(0, '#FFF3B0');
+    grad.addColorStop(0.5, '#FFD34D');
+    grad.addColorStop(1, '#C9860A');
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = 'rgba(120, 78, 0, 0.8)';
+    ctx.lineWidth = 1.1;
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.beginPath();
+    ctx.ellipse(cx - w * 0.18, cy - bandH * 0.55, w * 0.12, bandH * 0.32, -0.3, 0, Math.PI * 2);
+    ctx.fill();
+
+    const jewel = (jx, jy, r) => {
+      const jg = ctx.createRadialGradient(jx - r * 0.3, jy - r * 0.3, 0.5, jx, jy, r);
+      jg.addColorStop(0, '#FF9EB3');
+      jg.addColorStop(1, '#D81B4A');
+      ctx.fillStyle = jg;
+      ctx.beginPath();
+      ctx.arc(jx, jy, r, 0, Math.PI * 2);
+      ctx.fill();
+    };
+    jewel(cx, centerTipY + 1.5, w * 0.075);
+    jewel(leftTipX, sideTipY + 1.5, w * 0.055);
+    jewel(rightTipX, sideTipY + 1.5, w * 0.055);
+
+    ctx.restore();
   }
 
   function getEyeOffsets(d) {
