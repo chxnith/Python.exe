@@ -58,19 +58,10 @@
         </h2>
         <p id="overlayText">Arrow keys or WASD to move. Eat the coins, don't bite yourself.</p>
 
-        <div class="snake-color-picker" id="snakeColorPicker">
-          <span class="picker-label">
-            <span class="h-line small"></span>
-            <span class="dot">&bull;</span> SNAKE COLOUR <span class="dot">&bull;</span>
-            <span class="h-line small"></span>
-          </span>
-          <div class="swatch-row">
-            <button class="color-swatch active" data-color="green" style="--swatch: #35E6A0" aria-label="Green snake"></button>
-            <button class="color-swatch" data-color="blue" style="--swatch: #4DA3FF" aria-label="Blue snake"></button>
-            <button class="color-swatch" data-color="purple" style="--swatch: #B24DFF" aria-label="Purple snake"></button>
-            <button class="color-swatch" data-color="orange" style="--swatch: #FFA53D" aria-label="Orange snake"></button>
-          </div>
-        </div>
+        <button class="theme-toggle" id="snakeColorBtn" type="button">
+          <span class="swatch-preview" id="swatchPreview" style="--swatch: #35E6A0"></span>
+          Snake Colour
+        </button>
 
         <button class="theme-toggle" id="themeToggleBtn" type="button">&#127769; Dark</button>
         <button class="btn-primary" id="startBtn"><span class="play-icon">&#9654;</span> Start Game</button>
@@ -94,6 +85,26 @@
 
   <button class="icon-btn corner-btn corner-btn-left" title="Best score">&#127942;</button>
   <button class="icon-btn corner-btn corner-btn-right" title="Settings">&#9881;&#65039;</button>
+
+  <div class="color-modal-backdrop" id="colorModalBackdrop">
+    <div class="color-modal">
+      <div class="color-modal-header">
+        <span>Snake Colour</span>
+        <button class="color-modal-close" id="colorModalClose" type="button" aria-label="Close">&#10005;</button>
+      </div>
+      <div class="color-modal-grid" id="colorModalGrid"></div>
+    </div>
+  </div>
+
+  <div class="color-modal-backdrop" id="colorModalBackdrop">
+    <div class="color-modal">
+      <div class="color-modal-header">
+        <span>&#127912; Snake Colour</span>
+        <button class="color-modal-close" id="colorModalClose" aria-label="Close">&times;</button>
+      </div>
+      <div class="color-modal-grid" id="colorModalGrid"></div>
+    </div>
+  </div>
 
   <script src="script.js"></script>
 </body>
