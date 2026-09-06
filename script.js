@@ -679,3 +679,177 @@
   applyColorMode();
   applySnakeColor();
 })();
+
+/* ============ Animated background snakes (decorative, always running) ============ */
+(function () {
+  const bgCanvas = document.getElementById('bgCanvas');
+  const bgCtx = bgCanvas.getContext('2d');
+
+  const MAIN_CELL = 24;
+  const BG_CELL = MAIN_CELL * 3; // 3x bigger than the in-game snake
+  const SNAKE_LEN = 5;
+  const STEP_MS = 260;
+
+  const COLORS = ['#35E6A0', '#4DA3FF', '#B24DFF', '#FFA53D', '#FF5C7A'];
+
+  function colorToRgb(c) {
+    const n = parseInt(c.slice(1), 16);
+    return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+  }
+
+  function mixColor(colorA, colorB, t) {
+    const a = colorToRgb(colorA), b = colorToRgb(colorB);
+    const r = Math.round(a.r + (b.r - a.r) * t);
+    const g = Math.round(a.g + (b.g - a.g) * t);
+    const bl = Math.round(a.b + (b.b - a.b) * t);
+    return `rgb(${r}, ${g}, ${bl})`;
+  }
+
+  function lighten(color, t) { return mixColor(color, '#FFFFFF', t); }
+  function darken(color, t) { return mixColor(color, '#000000', t); }
+
+  function pathRoundedRect(x, y, w, h, r) {
+    bgCtx.beginPath();
+    bgCtx.moveTo(x + r, y);
+    bgCtx.arcTo(x + w, y, x + w, y + h, r);
+    bgCtx.arcTo(x + w, y + h, x, y + h, r);
+    bgCtx.arcTo(x, y + h, x, y, r);
+    bgCtx.arcTo(x, y, x + w, y, r);
+    bgCtx.closePath();
+  }
+
+  function gridSize() {
+    return {
+      cols: Math.ceil(bgCanvas.width / BG_CELL) + 2,
+      rows: Math.ceil(bgCanvas.height / BG_CELL) + 2,
+    };
+  }
+
+  function resize() {
+    bgCanvas.width = window.innerWidth;
+    bgCanvas.height = window.innerHeight;
+  }
+
+  function randomDir() {
+    const dirs = [{ x: 1, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: -1 }];
+    return dirs[Math.floor(Math.random() * dirs.length)];
+  }
+
+  function makeSnake(color) {
+    const { cols, rows } = gridSize();
+    const startX = Math.floor(Math.random() * cols);
+    const startY = Math.floor(Math.random() * rows);
+    const dir = randomDir();
+    const cells = [];
+    for (let i = 0; i < SNAKE_LEN; i++) {
+      cells.push({ x: startX - dir.x * i, y: startY - dir.y * i });
+    }
+    return { color, dir, cells };
+  }
+
+  const snakes = COLORS.map(makeSnake);
+
+  function stepSnake(snake) {
+    const { cols, rows } = gridSize();
+
+    if (Math.random() < 0.22) {
+      const perp = snake.dir.x !== 0
+        ? [{ x: 0, y: 1 }, { x: 0, y: -1 }]
+        : [{ x: 1, y: 0 }, { x: -1, y: 0 }];
+      snake.dir = perp[Math.floor(Math.random() * 2)];
+    }
+
+    const head = snake.cells[0];
+    let nx = head.x + snake.dir.x;
+    let ny = head.y + snake.dir.y;
+    if (nx < 0) nx = cols - 1;
+    if (nx >= cols) nx = 0;
+    if (ny < 0) ny = rows - 1;
+    if (ny >= rows) ny = 0;
+
+    snake.cells.unshift({ x: nx, y: ny });
+    snake.cells.pop();
+  }
+
+  function getEyeOffsets(dir, size) {
+    const o = size * 0.29;
+    if (dir.x === 1) return [[size - o, o], [size - o, size - o]];
+    if (dir.x === -1) return [[o, o], [o, size - o]];
+    if (dir.y === -1) return [[o, o], [size - o, o]];
+    return [[o, size - o], [size - o, size - o]];
+  }
+
+  function drawSnake(snake) {
+    const size = BG_CELL;
+    const pad = size * 0.14;
+
+    snake.cells.forEach((seg) => {
+      bgCtx.save();
+      bgCtx.translate(0, 6);
+      bgCtx.globalAlpha = 0.22;
+      pathRoundedRect(seg.x * size + pad / 2, seg.y * size + pad / 2, size - pad, size - pad, 18);
+      bgCtx.fillStyle = '#000000';
+      bgCtx.fill();
+      bgCtx.restore();
+    });
+
+    snake.cells.forEach((seg, i) => {
+      const px = seg.x * size, py = seg.y * size;
+
+      if (i === 0) {
+        const light = lighten(snake.color, 0.4);
+        const dark = darken(snake.color, 0.35);
+        const grad = bgCtx.createLinearGradient(px, py, px + size, py + size);
+        grad.addColorStop(0, light);
+        grad.addColorStop(1, dark);
+
+        bgCtx.save();
+        bgCtx.shadowColor = snake.color;
+        bgCtx.shadowBlur = 30;
+        pathRoundedRect(px + pad / 2, py + pad / 2, size - pad, size - pad, 18);
+        bgCtx.fillStyle = grad;
+        bgCtx.fill();
+        bgCtx.restore();
+
+        bgCtx.fillStyle = 'rgba(255,255,255,0.32)';
+        bgCtx.beginPath();
+        bgCtx.ellipse(px + size * 0.32, py + size * 0.28, size * 0.16, size * 0.09, -0.4, 0, Math.PI * 2);
+        bgCtx.fill();
+
+        bgCtx.fillStyle = '#06140F';
+        getEyeOffsets(snake.dir, size).forEach(([ex, ey]) => {
+          bgCtx.beginPath();
+          bgCtx.arc(px + ex, py + ey, size * 0.055, 0, Math.PI * 2);
+          bgCtx.fill();
+        });
+      } else {
+        const t = Math.min(0.75, i / snake.cells.length);
+        const base = mixColor(snake.color, '#050709', t);
+        const light = lighten(base, 0.22);
+        const dark = darken(base, 0.32);
+        const grad = bgCtx.createLinearGradient(px, py, px + size, py + size);
+        grad.addColorStop(0, light);
+        grad.addColorStop(1, dark);
+        pathRoundedRect(px + pad / 2, py + pad / 2, size - pad, size - pad, 16);
+        bgCtx.fillStyle = grad;
+        bgCtx.fill();
+
+        bgCtx.fillStyle = 'rgba(255,255,255,0.1)';
+        bgCtx.beginPath();
+        bgCtx.ellipse(px + size * 0.32, py + size * 0.28, size * 0.1, size * 0.05, -0.4, 0, Math.PI * 2);
+        bgCtx.fill();
+      }
+    });
+  }
+
+  function render() {
+    bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+    snakes.forEach(drawSnake);
+    requestAnimationFrame(render);
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+  setInterval(() => snakes.forEach(stepSnake), STEP_MS);
+  requestAnimationFrame(render);
+})();
