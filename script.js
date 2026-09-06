@@ -35,15 +35,22 @@
   }
   const BERRY = '#FF5C7A';
 
-  const SNAKE_COLORS = {
-    green: '#35E6A0',
-    blue: '#4DA3FF',
-    purple: '#B24DFF',
-    orange: '#FFA53D',
-  };
+  function hslToHex(h, s, l) {
+    s /= 100; l /= 100;
+    const k = n => (n + h / 30) % 12;
+    const a = s * Math.min(l, 1 - l);
+    const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+    const toHex = x => Math.round(255 * x).toString(16).padStart(2, '0');
+    return `#${toHex(f(0))}${toHex(f(8))}${toHex(f(4))}`;
+  }
+
+  // 25 evenly-spaced, vivid hues (starting at the game's original mint-green accent).
+  const SNAKE_COLOR_OPTIONS = Array.from({ length: 25 }, (_, i) =>
+    hslToHex((154 + i * (360 / 25)) % 360, 78, 58)
+  );
 
   function currentSnakeColor() {
-    return SNAKE_COLORS[snakeColor] || SNAKE_COLORS.green;
+    return snakeColor;
   }
 
   function colorToRgb(c) {
@@ -71,7 +78,7 @@
   let level = 1;
   let obstacle = null;
   let colorMode = localStorage.getItem('neonSnakeTheme') || 'dark';
-  let snakeColor = localStorage.getItem('neonSnakeColor') || 'green';
+  let snakeColor = localStorage.getItem('neonSnakeColor') || SNAKE_COLOR_OPTIONS[0];
 
   best = Number(localStorage.getItem('neonSnakeBest') || 0);
   bestEl.textContent = best;
@@ -159,12 +166,38 @@
     applyColorMode();
   });
 
-  const colorSwatches = document.querySelectorAll('.color-swatch');
+  const snakeColorBtn = document.getElementById('snakeColorBtn');
+  const swatchPreview = document.getElementById('swatchPreview');
+  const colorModalBackdrop = document.getElementById('colorModalBackdrop');
+  const colorModalClose = document.getElementById('colorModalClose');
+  const colorModalGrid = document.getElementById('colorModalGrid');
+
+  SNAKE_COLOR_OPTIONS.forEach(hex => {
+    const btn = document.createElement('button');
+    btn.className = 'color-swatch';
+    btn.type = 'button';
+    btn.dataset.color = hex;
+    btn.style.setProperty('--swatch', hex);
+    btn.setAttribute('aria-label', `Snake colour ${hex}`);
+    colorModalGrid.appendChild(btn);
+  });
+
+  const colorSwatches = colorModalGrid.querySelectorAll('.color-swatch');
+
+  function openColorModal() { colorModalBackdrop.classList.add('show'); }
+  function closeColorModal() { colorModalBackdrop.classList.remove('show'); }
+
+  snakeColorBtn.addEventListener('click', openColorModal);
+  colorModalClose.addEventListener('click', closeColorModal);
+  colorModalBackdrop.addEventListener('click', (e) => {
+    if (e.target === colorModalBackdrop) closeColorModal();
+  });
 
   function applySnakeColor() {
     colorSwatches.forEach(btn => {
       btn.classList.toggle('active', btn.dataset.color === snakeColor);
     });
+    swatchPreview.style.setProperty('--swatch', snakeColor);
     localStorage.setItem('neonSnakeColor', snakeColor);
     drawBoard();
     drawObstacle(performance.now());
@@ -176,6 +209,7 @@
     btn.addEventListener('click', () => {
       snakeColor = btn.dataset.color;
       applySnakeColor();
+      closeColorModal();
     });
   });
 
