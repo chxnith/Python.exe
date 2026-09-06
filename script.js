@@ -12,6 +12,7 @@
   const overlayText = document.getElementById('overlayText');
   const startBtn = document.getElementById('startBtn');
   const dpad = document.getElementById('dpad');
+  const resetBestBtn = document.getElementById('resetBestBtn');
 
   const levelEl = document.getElementById('level');
 
@@ -82,6 +83,13 @@
 
   best = Number(localStorage.getItem('neonSnakeBest') || 0);
   bestEl.textContent = best;
+
+  resetBestBtn.addEventListener('click', () => {
+    if (!best || !window.confirm('Reset the top score?')) return;
+    best = 0;
+    localStorage.removeItem('neonSnakeBest');
+    bestEl.textContent = best;
+  });
 
   const muteBtn = document.getElementById('muteBtn');
   let muted = localStorage.getItem('gardenSnakeMuted') === 'true';
