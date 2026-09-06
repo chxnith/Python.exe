@@ -686,15 +686,23 @@
   const bgCtx = bgCanvas.getContext('2d');
 
   const MAIN_CELL = 24;
-  const BG_CELL = MAIN_CELL * 3; // 3x bigger than the in-game snake
+  const BG_CELL = MAIN_CELL * 2; // 2x bigger than the in-game snake
   const SNAKE_LEN = 5;
+  const MAX_LEN = 9;
   const STEP_MS = 260;
+  const COIN_COUNT = 6;
 
   const COLORS = ['#35E6A0', '#4DA3FF', '#B24DFF', '#FFA53D', '#FF5C7A'];
 
+  // Handles both '#RRGGBB' hex and 'rgb(r, g, b)' strings, so re-mixing an
+  // already-mixed color (e.g. lighten(mixColor(...))) still works correctly.
   function colorToRgb(c) {
-    const n = parseInt(c.slice(1), 16);
-    return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+    if (c[0] === '#') {
+      const n = parseInt(c.slice(1), 16);
+      return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+    }
+    const parts = c.match(/rgba?\(([^)]+)\)/)[1].split(',').map(Number);
+    return { r: parts[0], g: parts[1], b: parts[2] };
   }
 
   function mixColor(colorA, colorB, t) {
@@ -748,18 +756,60 @@
   }
 
   const snakes = COLORS.map(makeSnake);
+  let coins = [];
+
+  function isOccupied(pos) {
+    if (snakes.some(s => s.cells.some(c => c.x === pos.x && c.y === pos.y))) return true;
+    if (coins.some(c => c.x === pos.x && c.y === pos.y)) return true;
+    return false;
+  }
+
+  function spawnCoin() {
+    const { cols, rows } = gridSize();
+    let pos, tries = 0;
+    do {
+      pos = { x: Math.floor(Math.random() * cols), y: Math.floor(Math.random() * rows) };
+      tries++;
+    } while (isOccupied(pos) && tries < 30);
+    coins.push(pos);
+  }
+
+  function ensureCoins() {
+    while (coins.length < COIN_COUNT) spawnCoin();
+  }
+
+  function nearestCoin(head) {
+    let best = null, bestDist = Infinity;
+    coins.forEach(c => {
+      const d = Math.abs(c.x - head.x) + Math.abs(c.y - head.y);
+      if (d < bestDist) { bestDist = d; best = c; }
+    });
+    return best;
+  }
 
   function stepSnake(snake) {
     const { cols, rows } = gridSize();
+    const head = snake.cells[0];
+    const target = nearestCoin(head);
 
-    if (Math.random() < 0.22) {
+    // Mostly steer toward the nearest coin, with some wandering so it
+    // doesn't look robotic.
+    if (target && Math.random() < 0.82) {
+      const dx = target.x - head.x;
+      const dy = target.y - head.y;
+      const options = [];
+      if (dx !== 0) options.push({ x: Math.sign(dx), y: 0 });
+      if (dy !== 0) options.push({ x: 0, y: Math.sign(dy) });
+      const preferred = Math.abs(dx) >= Math.abs(dy) ? options[0] : (options[1] || options[0]);
+      const notReversing = preferred && !(preferred.x === -snake.dir.x && preferred.y === -snake.dir.y);
+      if (preferred && notReversing) snake.dir = preferred;
+    } else if (Math.random() < 0.22) {
       const perp = snake.dir.x !== 0
         ? [{ x: 0, y: 1 }, { x: 0, y: -1 }]
         : [{ x: 1, y: 0 }, { x: -1, y: 0 }];
       snake.dir = perp[Math.floor(Math.random() * 2)];
     }
 
-    const head = snake.cells[0];
     let nx = head.x + snake.dir.x;
     let ny = head.y + snake.dir.y;
     if (nx < 0) nx = cols - 1;
@@ -768,7 +818,15 @@
     if (ny >= rows) ny = 0;
 
     snake.cells.unshift({ x: nx, y: ny });
-    snake.cells.pop();
+
+    const eatenIndex = coins.findIndex(c => c.x === nx && c.y === ny);
+    if (eatenIndex !== -1) {
+      coins.splice(eatenIndex, 1);
+      spawnCoin();
+      if (snake.cells.length > MAX_LEN) snake.cells.pop();
+    } else {
+      snake.cells.pop();
+    }
   }
 
   function getEyeOffsets(dir, size) {
@@ -785,9 +843,9 @@
 
     snake.cells.forEach((seg) => {
       bgCtx.save();
-      bgCtx.translate(0, 6);
+      bgCtx.translate(0, 5);
       bgCtx.globalAlpha = 0.22;
-      pathRoundedRect(seg.x * size + pad / 2, seg.y * size + pad / 2, size - pad, size - pad, 18);
+      pathRoundedRect(seg.x * size + pad / 2, seg.y * size + pad / 2, size - pad, size - pad, 14);
       bgCtx.fillStyle = '#000000';
       bgCtx.fill();
       bgCtx.restore();
@@ -805,8 +863,8 @@
 
         bgCtx.save();
         bgCtx.shadowColor = snake.color;
-        bgCtx.shadowBlur = 30;
-        pathRoundedRect(px + pad / 2, py + pad / 2, size - pad, size - pad, 18);
+        bgCtx.shadowBlur = 22;
+        pathRoundedRect(px + pad / 2, py + pad / 2, size - pad, size - pad, 14);
         bgCtx.fillStyle = grad;
         bgCtx.fill();
         bgCtx.restore();
@@ -823,18 +881,18 @@
           bgCtx.fill();
         });
       } else {
-        const t = Math.min(0.75, i / snake.cells.length);
-        const base = mixColor(snake.color, '#050709', t);
-        const light = lighten(base, 0.22);
-        const dark = darken(base, 0.32);
+        const t = Math.min(0.7, i / snake.cells.length);
+        const base = mixColor(snake.color, '#0D111C', t);
+        const light = lighten(base, 0.24);
+        const dark = darken(base, 0.3);
         const grad = bgCtx.createLinearGradient(px, py, px + size, py + size);
         grad.addColorStop(0, light);
         grad.addColorStop(1, dark);
-        pathRoundedRect(px + pad / 2, py + pad / 2, size - pad, size - pad, 16);
+        pathRoundedRect(px + pad / 2, py + pad / 2, size - pad, size - pad, 12);
         bgCtx.fillStyle = grad;
         bgCtx.fill();
 
-        bgCtx.fillStyle = 'rgba(255,255,255,0.1)';
+        bgCtx.fillStyle = 'rgba(255,255,255,0.12)';
         bgCtx.beginPath();
         bgCtx.ellipse(px + size * 0.32, py + size * 0.28, size * 0.1, size * 0.05, -0.4, 0, Math.PI * 2);
         bgCtx.fill();
@@ -842,14 +900,71 @@
     });
   }
 
-  function render() {
+  function drawCoin(coin, t) {
+    const size = BG_CELL;
+    const cx = coin.x * size + size / 2;
+    const cy = coin.y * size + size / 2;
+    const r = size / 2.7;
+
+    const glow = bgCtx.createRadialGradient(cx, cy, 1, cx, cy, r + 6);
+    glow.addColorStop(0, 'rgba(255, 209, 102, 0.45)');
+    glow.addColorStop(1, 'rgba(255, 209, 102, 0)');
+    bgCtx.fillStyle = glow;
+    bgCtx.beginPath();
+    bgCtx.arc(cx, cy, r + 6, 0, Math.PI * 2);
+    bgCtx.fill();
+
+    const spin = Math.cos((t + coin.x * 130 + coin.y * 90) / 480);
+    const scaleX = Math.max(0.22, Math.abs(spin));
+    const facingFront = scaleX > 0.45;
+
+    bgCtx.save();
+    bgCtx.translate(cx, cy);
+    bgCtx.scale(scaleX, 1);
+
+    const body = bgCtx.createRadialGradient(-r * 0.3, -r * 0.35, 1, 0, 0, r);
+    body.addColorStop(0, '#FFF3B0');
+    body.addColorStop(0.45, '#FFD34D');
+    body.addColorStop(0.8, '#E0A400');
+    body.addColorStop(1, '#8A5B00');
+    bgCtx.fillStyle = body;
+    bgCtx.beginPath();
+    bgCtx.arc(0, 0, r, 0, Math.PI * 2);
+    bgCtx.fill();
+
+    bgCtx.strokeStyle = 'rgba(120, 78, 0, 0.75)';
+    bgCtx.lineWidth = 1.2;
+    bgCtx.stroke();
+
+    if (facingFront) {
+      bgCtx.strokeStyle = 'rgba(138, 91, 0, 0.55)';
+      bgCtx.lineWidth = 1;
+      bgCtx.beginPath();
+      bgCtx.arc(0, 0, r * 0.66, 0, Math.PI * 2);
+      bgCtx.stroke();
+    }
+
+    bgCtx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+    bgCtx.beginPath();
+    bgCtx.ellipse(-r * 0.3, -r * 0.32, r * 0.3, r * 0.15, -0.5, 0, Math.PI * 2);
+    bgCtx.fill();
+
+    bgCtx.restore();
+  }
+
+  function render(t) {
     bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+    coins.forEach(c => drawCoin(c, t));
     snakes.forEach(drawSnake);
     requestAnimationFrame(render);
   }
 
-  window.addEventListener('resize', resize);
+  window.addEventListener('resize', () => {
+    resize();
+    ensureCoins();
+  });
   resize();
+  ensureCoins();
   setInterval(() => snakes.forEach(stepSnake), STEP_MS);
   requestAnimationFrame(render);
 })();
