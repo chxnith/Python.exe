@@ -614,6 +614,7 @@
     overlayText.textContent = `Score: ${score}. Tap start to try again.`;
     startBtn.innerHTML = '<span class="play-icon">▶</span> Play Again';
     overlay.classList.add('show');
+    window.bgAnimationEnabled = true;
   }
 
   function startGame() {
@@ -626,6 +627,7 @@
     clearInterval(loopHandle);
     loopHandle = setInterval(step, speedMs);
     requestAnimationFrame(render);
+    window.bgAnimationEnabled = false;
   }
 
   function setDirection(x, y) {
@@ -757,6 +759,7 @@
 
   const snakes = COLORS.map(makeSnake);
   let coins = [];
+  window.bgAnimationEnabled = true;
 
   function isOccupied(pos) {
     if (snakes.some(s => s.cells.some(c => c.x === pos.x && c.y === pos.y))) return true;
@@ -954,8 +957,10 @@
 
   function render(t) {
     bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
-    coins.forEach(c => drawCoin(c, t));
-    snakes.forEach(drawSnake);
+    if (window.bgAnimationEnabled) {
+      coins.forEach(c => drawCoin(c, t));
+      snakes.forEach(drawSnake);
+    }
     requestAnimationFrame(render);
   }
 
@@ -965,6 +970,8 @@
   });
   resize();
   ensureCoins();
-  setInterval(() => snakes.forEach(stepSnake), STEP_MS);
+  setInterval(() => {
+    if (window.bgAnimationEnabled) snakes.forEach(stepSnake);
+  }, STEP_MS);
   requestAnimationFrame(render);
 })();
