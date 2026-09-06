@@ -563,47 +563,52 @@
     if (score > best) {
       const bob = Math.sin((t || 0) / 260) * 2;
       const crownW = cell * 0.85;
-      let ccx, ccy;
+      let ccx, ccy, angle;
 
       if (dir.y !== 0) {
-        // Moving vertically: show the crown beside the head instead of on top.
-        ccx = hx + cell * 1.15;
-        ccy = hy + cell * 0.66 + bob;
+        // Moving vertically: rest the crown against the side of the head,
+        // rotated so its band hugs the head and its tips point outward.
+        ccx = hx + cell - cell * 0.05;
+        ccy = hy + cell / 2 + bob;
+        angle = Math.PI / 2;
       } else {
         // Moving horizontally: show the crown on top, like a hat.
         ccx = hx + cell / 2 + bob;
         ccy = hy - cell * 0.06;
+        angle = 0;
       }
 
-      drawCrown(ccx, ccy, crownW);
+      drawCrown(ccx, ccy, crownW, angle);
     }
   }
 
-  function drawCrown(cx, cy, w) {
+  function drawCrown(cx, cy, w, angle) {
     const h = w * 0.78;
     const bandH = h * 0.34;
     const peakH = h - bandH;
-    const bandTopY = cy - bandH;
-    const leftTipX = cx - w / 2, rightTipX = cx + w / 2;
-    const leftValleyX = cx - w * 0.27, rightValleyX = cx + w * 0.27;
+    const bandTopY = -bandH;
+    const leftTipX = -w / 2, rightTipX = w / 2;
+    const leftValleyX = -w * 0.27, rightValleyX = w * 0.27;
     const sideTipY = bandTopY - peakH * 0.42;
     const centerTipY = bandTopY - peakH;
 
     ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(angle || 0);
     ctx.shadowColor = 'rgba(255, 205, 70, 0.8)';
     ctx.shadowBlur = 9;
 
     ctx.beginPath();
-    ctx.moveTo(cx - w / 2, cy);
+    ctx.moveTo(-w / 2, 0);
     ctx.lineTo(leftTipX, sideTipY);
     ctx.lineTo(leftValleyX, bandTopY);
-    ctx.lineTo(cx, centerTipY);
+    ctx.lineTo(0, centerTipY);
     ctx.lineTo(rightValleyX, bandTopY);
     ctx.lineTo(rightTipX, sideTipY);
-    ctx.lineTo(cx + w / 2, cy);
+    ctx.lineTo(w / 2, 0);
     ctx.closePath();
 
-    const grad = ctx.createLinearGradient(cx, centerTipY, cx, cy);
+    const grad = ctx.createLinearGradient(0, centerTipY, 0, 0);
     grad.addColorStop(0, '#FFF3B0');
     grad.addColorStop(0.5, '#FFD34D');
     grad.addColorStop(1, '#C9860A');
@@ -617,7 +622,7 @@
 
     ctx.fillStyle = 'rgba(255,255,255,0.4)';
     ctx.beginPath();
-    ctx.ellipse(cx - w * 0.18, cy - bandH * 0.55, w * 0.12, bandH * 0.32, -0.3, 0, Math.PI * 2);
+    ctx.ellipse(-w * 0.18, -bandH * 0.55, w * 0.12, bandH * 0.32, -0.3, 0, Math.PI * 2);
     ctx.fill();
 
     const jewel = (jx, jy, r) => {
@@ -629,7 +634,7 @@
       ctx.arc(jx, jy, r, 0, Math.PI * 2);
       ctx.fill();
     };
-    jewel(cx, centerTipY + 1.5, w * 0.075);
+    jewel(0, centerTipY + 1.5, w * 0.075);
     jewel(leftTipX, sideTipY + 1.5, w * 0.055);
     jewel(rightTipX, sideTipY + 1.5, w * 0.055);
 
