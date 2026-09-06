@@ -151,7 +151,7 @@
     drawBoard();
     drawObstacle(performance.now());
     drawFood(performance.now());
-    drawSnake();
+    drawSnake(performance.now());
   }
 
   themeToggleBtn.addEventListener('click', () => {
@@ -169,7 +169,7 @@
     drawBoard();
     drawObstacle(performance.now());
     drawFood(performance.now());
-    drawSnake();
+    drawSnake(performance.now());
   }
 
   colorSwatches.forEach(btn => {
@@ -466,7 +466,7 @@
     ctx.stroke();
   }
 
-  function drawSnake() {
+  function drawSnake(t) {
     const theme = currentTheme();
     const accent = currentSnakeColor();
 
@@ -525,6 +525,20 @@
       ctx.arc(hx + ex, hy + ey, 2.4, 0, Math.PI * 2);
       ctx.fill();
     });
+
+    if (score > best) {
+      const bob = Math.sin((t || 0) / 260) * 2;
+      const cx = hx + cell / 2;
+      const cy = hy - cell * 0.5 + bob;
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = `${cell * 0.95}px sans-serif`;
+      ctx.shadowColor = 'rgba(255, 205, 70, 0.85)';
+      ctx.shadowBlur = 10;
+      ctx.fillText('👑', cx, cy);
+      ctx.restore();
+    }
   }
 
   function getEyeOffsets(d) {
@@ -596,7 +610,7 @@
     drawBoard();
     drawObstacle(t);
     drawFood(t);
-    drawSnake();
+    drawSnake(t);
     drawParticles();
     if (running) requestAnimationFrame(render);
   }
