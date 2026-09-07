@@ -12,7 +12,6 @@
   const overlayText = document.getElementById('overlayText');
   const startBtn = document.getElementById('startBtn');
   const dpad = document.getElementById('dpad');
-  const resetBestBtn = document.getElementById('resetBestBtn');
 
   const levelEl = document.getElementById('level');
 
@@ -84,16 +83,10 @@
   best = Number(localStorage.getItem('neonSnakeBest') || 0);
   bestEl.textContent = best;
 
-  resetBestBtn.addEventListener('click', () => {
-    if (!best || !window.confirm('Reset the top score?')) return;
-    best = 0;
-    localStorage.removeItem('neonSnakeBest');
-    bestEl.textContent = best;
-  });
-
-  const muteBtn = document.getElementById('muteBtn');
+  const settingsBtn = document.getElementById('settingsBtn');
   let muted = localStorage.getItem('gardenSnakeMuted') === 'true';
-  muteBtn.classList.toggle('muted', muted);
+  settingsBtn.classList.toggle('muted', muted);
+  settingsBtn.title = muted ? 'Sound: off' : 'Sound: on';
 
   let audioCtx = null;
   function getAudioCtx() {
@@ -150,18 +143,23 @@
     [523, 659, 784, 1047].forEach((f, i) => tone(f, t + i * 0.08, 0.18, 'triangle', 0.13));
   }
 
-  muteBtn.addEventListener('click', () => {
+  settingsBtn.addEventListener('click', () => {
     muted = !muted;
     localStorage.setItem('gardenSnakeMuted', String(muted));
-    muteBtn.classList.toggle('muted', muted);
+    settingsBtn.classList.toggle('muted', muted);
+    settingsBtn.title = muted ? 'Sound: off' : 'Sound: on';
     if (!muted) getAudioCtx().resume();
   });
 
   const themeToggleBtn = document.getElementById('themeToggleBtn');
+  const darkModeRow = document.getElementById('darkModeRow');
+  const darkModeSwitch = document.getElementById('darkModeSwitch');
 
   function applyColorMode() {
-    document.body.classList.toggle('theme-light', colorMode === 'light');
-    themeToggleBtn.textContent = colorMode === 'light' ? '☀️ Light' : '🌙 Dark';
+    const isDark = colorMode === 'dark';
+    document.body.classList.toggle('theme-light', !isDark);
+    themeToggleBtn.textContent = isDark ? '🌙' : '☀️';
+    darkModeSwitch.classList.toggle('on', isDark);
     localStorage.setItem('neonSnakeTheme', colorMode);
     drawBoard();
     drawObstacle(performance.now());
@@ -169,43 +167,56 @@
     drawSnake(performance.now());
   }
 
-  themeToggleBtn.addEventListener('click', () => {
+  function toggleColorMode() {
     colorMode = colorMode === 'light' ? 'dark' : 'light';
     applyColorMode();
-  });
+  }
 
-  const snakeColorBtn = document.getElementById('snakeColorBtn');
-  const swatchPreview = document.getElementById('swatchPreview');
+  themeToggleBtn.addEventListener('click', toggleColorMode);
+  darkModeRow.addEventListener('click', toggleColorMode);
+
+  const changeColourBtn = document.getElementById('changeColourBtn');
   const colorModalBackdrop = document.getElementById('colorModalBackdrop');
   const colorModalClose = document.getElementById('colorModalClose');
   const colorModalGrid = document.getElementById('colorModalGrid');
+  const quickSwatchRow = document.getElementById('quickSwatchRow');
 
-  SNAKE_COLOR_OPTIONS.forEach(hex => {
+  function makeSwatchButton(hex) {
     const btn = document.createElement('button');
     btn.className = 'color-swatch';
     btn.type = 'button';
     btn.dataset.color = hex;
     btn.style.setProperty('--swatch', hex);
     btn.setAttribute('aria-label', `Snake colour ${hex}`);
-    colorModalGrid.appendChild(btn);
+    return btn;
+  }
+
+  SNAKE_COLOR_OPTIONS.forEach(hex => {
+    colorModalGrid.appendChild(makeSwatchButton(hex));
   });
 
-  const colorSwatches = colorModalGrid.querySelectorAll('.color-swatch');
+  // A handful of favourites for quick access, pulled from the same palette.
+  [0, 5, 8, 12].forEach(i => {
+    quickSwatchRow.appendChild(makeSwatchButton(SNAKE_COLOR_OPTIONS[i]));
+  });
+
+  function allSwatchButtons() {
+    return document.querySelectorAll('.color-swatch');
+  }
 
   function openColorModal() { colorModalBackdrop.classList.add('show'); }
   function closeColorModal() { colorModalBackdrop.classList.remove('show'); }
 
-  snakeColorBtn.addEventListener('click', openColorModal);
+  changeColourBtn.addEventListener('click', openColorModal);
   colorModalClose.addEventListener('click', closeColorModal);
   colorModalBackdrop.addEventListener('click', (e) => {
     if (e.target === colorModalBackdrop) closeColorModal();
   });
 
   function applySnakeColor() {
-    colorSwatches.forEach(btn => {
+    allSwatchButtons().forEach(btn => {
       btn.classList.toggle('active', btn.dataset.color === snakeColor);
     });
-    swatchPreview.style.setProperty('--swatch', snakeColor);
     localStorage.setItem('neonSnakeColor', snakeColor);
     drawBoard();
     drawObstacle(performance.now());
@@ -213,7 +224,7 @@
     drawSnake(performance.now());
   }
 
-  colorSwatches.forEach(btn => {
+  allSwatchButtons().forEach(btn => {
     btn.addEventListener('click', () => {
       snakeColor = btn.dataset.color;
       applySnakeColor();
@@ -734,9 +745,9 @@
     }
     overlayTitle.textContent = 'Game Over';
     overlayText.textContent = `Score: ${score}. Tap start to try again.`;
-    startBtn.innerHTML = '<span class="play-icon">▶</span> Play Again';
+    startBtn.innerHTML = '<span class="play-icon">▶</span> Play Again <span class="chevron">›</span>';
     overlay.classList.add('show');
-    window.bgAnimationEnabled = true;
+    document.body.classList.remove('game-active');
   }
 
   function startGame() {
@@ -749,7 +760,7 @@
     clearInterval(loopHandle);
     loopHandle = setInterval(step, speedMs);
     requestAnimationFrame(render);
-    window.bgAnimationEnabled = false;
+    document.body.classList.add('game-active');
   }
 
   function setDirection(x, y) {
@@ -802,298 +813,4 @@
   resetState();
   applyColorMode();
   applySnakeColor();
-})();
-
-/* ============ Animated background snakes (decorative, always running) ============ */
-(function () {
-  const bgCanvas = document.getElementById('bgCanvas');
-  const bgCtx = bgCanvas.getContext('2d');
-
-  const MAIN_CELL = 24;
-  const BG_CELL = MAIN_CELL * 2; // 2x bigger than the in-game snake
-  const SNAKE_LEN = 5;
-  const MAX_LEN = 9;
-  const STEP_MS = 260;
-  const COIN_COUNT = 6;
-
-  const COLORS = ['#35E6A0', '#4DA3FF', '#B24DFF', '#FFA53D', '#FF5C7A'];
-
-  // Handles both '#RRGGBB' hex and 'rgb(r, g, b)' strings, so re-mixing an
-  // already-mixed color (e.g. lighten(mixColor(...))) still works correctly.
-  function colorToRgb(c) {
-    if (c[0] === '#') {
-      const n = parseInt(c.slice(1), 16);
-      return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
-    }
-    const parts = c.match(/rgba?\(([^)]+)\)/)[1].split(',').map(Number);
-    return { r: parts[0], g: parts[1], b: parts[2] };
-  }
-
-  function mixColor(colorA, colorB, t) {
-    const a = colorToRgb(colorA), b = colorToRgb(colorB);
-    const r = Math.round(a.r + (b.r - a.r) * t);
-    const g = Math.round(a.g + (b.g - a.g) * t);
-    const bl = Math.round(a.b + (b.b - a.b) * t);
-    return `rgb(${r}, ${g}, ${bl})`;
-  }
-
-  function lighten(color, t) { return mixColor(color, '#FFFFFF', t); }
-  function darken(color, t) { return mixColor(color, '#000000', t); }
-
-  function pathRoundedRect(x, y, w, h, r) {
-    bgCtx.beginPath();
-    bgCtx.moveTo(x + r, y);
-    bgCtx.arcTo(x + w, y, x + w, y + h, r);
-    bgCtx.arcTo(x + w, y + h, x, y + h, r);
-    bgCtx.arcTo(x, y + h, x, y, r);
-    bgCtx.arcTo(x, y, x + w, y, r);
-    bgCtx.closePath();
-  }
-
-  function gridSize() {
-    return {
-      cols: Math.ceil(bgCanvas.width / BG_CELL) + 2,
-      rows: Math.ceil(bgCanvas.height / BG_CELL) + 2,
-    };
-  }
-
-  function resize() {
-    bgCanvas.width = window.innerWidth;
-    bgCanvas.height = window.innerHeight;
-  }
-
-  function randomDir() {
-    const dirs = [{ x: 1, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: -1 }];
-    return dirs[Math.floor(Math.random() * dirs.length)];
-  }
-
-  function makeSnake(color) {
-    const { cols, rows } = gridSize();
-    const startX = Math.floor(Math.random() * cols);
-    const startY = Math.floor(Math.random() * rows);
-    const dir = randomDir();
-    const cells = [];
-    for (let i = 0; i < SNAKE_LEN; i++) {
-      cells.push({ x: startX - dir.x * i, y: startY - dir.y * i });
-    }
-    return { color, dir, cells };
-  }
-
-  const snakes = COLORS.map(makeSnake);
-  let coins = [];
-  window.bgAnimationEnabled = true;
-
-  function isOccupied(pos) {
-    if (snakes.some(s => s.cells.some(c => c.x === pos.x && c.y === pos.y))) return true;
-    if (coins.some(c => c.x === pos.x && c.y === pos.y)) return true;
-    return false;
-  }
-
-  function spawnCoin() {
-    const { cols, rows } = gridSize();
-    let pos, tries = 0;
-    do {
-      pos = { x: Math.floor(Math.random() * cols), y: Math.floor(Math.random() * rows) };
-      tries++;
-    } while (isOccupied(pos) && tries < 30);
-    coins.push(pos);
-  }
-
-  function ensureCoins() {
-    while (coins.length < COIN_COUNT) spawnCoin();
-  }
-
-  function nearestCoin(head) {
-    let best = null, bestDist = Infinity;
-    coins.forEach(c => {
-      const d = Math.abs(c.x - head.x) + Math.abs(c.y - head.y);
-      if (d < bestDist) { bestDist = d; best = c; }
-    });
-    return best;
-  }
-
-  function stepSnake(snake) {
-    const { cols, rows } = gridSize();
-    const head = snake.cells[0];
-    const target = nearestCoin(head);
-
-    // Mostly steer toward the nearest coin, with some wandering so it
-    // doesn't look robotic.
-    if (target && Math.random() < 0.82) {
-      const dx = target.x - head.x;
-      const dy = target.y - head.y;
-      const options = [];
-      if (dx !== 0) options.push({ x: Math.sign(dx), y: 0 });
-      if (dy !== 0) options.push({ x: 0, y: Math.sign(dy) });
-      const preferred = Math.abs(dx) >= Math.abs(dy) ? options[0] : (options[1] || options[0]);
-      const notReversing = preferred && !(preferred.x === -snake.dir.x && preferred.y === -snake.dir.y);
-      if (preferred && notReversing) snake.dir = preferred;
-    } else if (Math.random() < 0.22) {
-      const perp = snake.dir.x !== 0
-        ? [{ x: 0, y: 1 }, { x: 0, y: -1 }]
-        : [{ x: 1, y: 0 }, { x: -1, y: 0 }];
-      snake.dir = perp[Math.floor(Math.random() * 2)];
-    }
-
-    let nx = head.x + snake.dir.x;
-    let ny = head.y + snake.dir.y;
-    if (nx < 0) nx = cols - 1;
-    if (nx >= cols) nx = 0;
-    if (ny < 0) ny = rows - 1;
-    if (ny >= rows) ny = 0;
-
-    snake.cells.unshift({ x: nx, y: ny });
-
-    const eatenIndex = coins.findIndex(c => c.x === nx && c.y === ny);
-    if (eatenIndex !== -1) {
-      coins.splice(eatenIndex, 1);
-      spawnCoin();
-      if (snake.cells.length > MAX_LEN) snake.cells.pop();
-    } else {
-      snake.cells.pop();
-    }
-  }
-
-  function getEyeOffsets(dir, size) {
-    const o = size * 0.29;
-    if (dir.x === 1) return [[size - o, o], [size - o, size - o]];
-    if (dir.x === -1) return [[o, o], [o, size - o]];
-    if (dir.y === -1) return [[o, o], [size - o, o]];
-    return [[o, size - o], [size - o, size - o]];
-  }
-
-  function drawSnake(snake) {
-    const size = BG_CELL;
-    const pad = size * 0.14;
-
-    snake.cells.forEach((seg) => {
-      bgCtx.save();
-      bgCtx.translate(0, 5);
-      bgCtx.globalAlpha = 0.22;
-      pathRoundedRect(seg.x * size + pad / 2, seg.y * size + pad / 2, size - pad, size - pad, 14);
-      bgCtx.fillStyle = '#000000';
-      bgCtx.fill();
-      bgCtx.restore();
-    });
-
-    snake.cells.forEach((seg, i) => {
-      const px = seg.x * size, py = seg.y * size;
-
-      if (i === 0) {
-        const light = lighten(snake.color, 0.4);
-        const dark = darken(snake.color, 0.35);
-        const grad = bgCtx.createLinearGradient(px, py, px + size, py + size);
-        grad.addColorStop(0, light);
-        grad.addColorStop(1, dark);
-
-        bgCtx.save();
-        bgCtx.shadowColor = snake.color;
-        bgCtx.shadowBlur = 22;
-        pathRoundedRect(px + pad / 2, py + pad / 2, size - pad, size - pad, 14);
-        bgCtx.fillStyle = grad;
-        bgCtx.fill();
-        bgCtx.restore();
-
-        bgCtx.fillStyle = 'rgba(255,255,255,0.32)';
-        bgCtx.beginPath();
-        bgCtx.ellipse(px + size * 0.32, py + size * 0.28, size * 0.16, size * 0.09, -0.4, 0, Math.PI * 2);
-        bgCtx.fill();
-
-        bgCtx.fillStyle = '#06140F';
-        getEyeOffsets(snake.dir, size).forEach(([ex, ey]) => {
-          bgCtx.beginPath();
-          bgCtx.arc(px + ex, py + ey, size * 0.055, 0, Math.PI * 2);
-          bgCtx.fill();
-        });
-      } else {
-        const t = Math.min(0.7, i / snake.cells.length);
-        const base = mixColor(snake.color, '#0D111C', t);
-        const light = lighten(base, 0.24);
-        const dark = darken(base, 0.3);
-        const grad = bgCtx.createLinearGradient(px, py, px + size, py + size);
-        grad.addColorStop(0, light);
-        grad.addColorStop(1, dark);
-        pathRoundedRect(px + pad / 2, py + pad / 2, size - pad, size - pad, 12);
-        bgCtx.fillStyle = grad;
-        bgCtx.fill();
-
-        bgCtx.fillStyle = 'rgba(255,255,255,0.12)';
-        bgCtx.beginPath();
-        bgCtx.ellipse(px + size * 0.32, py + size * 0.28, size * 0.1, size * 0.05, -0.4, 0, Math.PI * 2);
-        bgCtx.fill();
-      }
-    });
-  }
-
-  function drawCoin(coin, t) {
-    const size = BG_CELL;
-    const cx = coin.x * size + size / 2;
-    const cy = coin.y * size + size / 2;
-    const r = size / 2.7;
-
-    const glow = bgCtx.createRadialGradient(cx, cy, 1, cx, cy, r + 6);
-    glow.addColorStop(0, 'rgba(255, 209, 102, 0.45)');
-    glow.addColorStop(1, 'rgba(255, 209, 102, 0)');
-    bgCtx.fillStyle = glow;
-    bgCtx.beginPath();
-    bgCtx.arc(cx, cy, r + 6, 0, Math.PI * 2);
-    bgCtx.fill();
-
-    const spin = Math.cos((t + coin.x * 130 + coin.y * 90) / 480);
-    const scaleX = Math.max(0.22, Math.abs(spin));
-    const facingFront = scaleX > 0.45;
-
-    bgCtx.save();
-    bgCtx.translate(cx, cy);
-    bgCtx.scale(scaleX, 1);
-
-    const body = bgCtx.createRadialGradient(-r * 0.3, -r * 0.35, 1, 0, 0, r);
-    body.addColorStop(0, '#FFF3B0');
-    body.addColorStop(0.45, '#FFD34D');
-    body.addColorStop(0.8, '#E0A400');
-    body.addColorStop(1, '#8A5B00');
-    bgCtx.fillStyle = body;
-    bgCtx.beginPath();
-    bgCtx.arc(0, 0, r, 0, Math.PI * 2);
-    bgCtx.fill();
-
-    bgCtx.strokeStyle = 'rgba(120, 78, 0, 0.75)';
-    bgCtx.lineWidth = 1.2;
-    bgCtx.stroke();
-
-    if (facingFront) {
-      bgCtx.strokeStyle = 'rgba(138, 91, 0, 0.55)';
-      bgCtx.lineWidth = 1;
-      bgCtx.beginPath();
-      bgCtx.arc(0, 0, r * 0.66, 0, Math.PI * 2);
-      bgCtx.stroke();
-    }
-
-    bgCtx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-    bgCtx.beginPath();
-    bgCtx.ellipse(-r * 0.3, -r * 0.32, r * 0.3, r * 0.15, -0.5, 0, Math.PI * 2);
-    bgCtx.fill();
-
-    bgCtx.restore();
-  }
-
-  function render(t) {
-    bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
-    if (window.bgAnimationEnabled) {
-      coins.forEach(c => drawCoin(c, t));
-      snakes.forEach(drawSnake);
-    }
-    requestAnimationFrame(render);
-  }
-
-  window.addEventListener('resize', () => {
-    resize();
-    ensureCoins();
-  });
-  resize();
-  ensureCoins();
-  setInterval(() => {
-    if (window.bgAnimationEnabled) snakes.forEach(stepSnake);
-  }, STEP_MS);
-  requestAnimationFrame(render);
 })();
