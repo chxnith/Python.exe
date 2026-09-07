@@ -6,65 +6,93 @@
   <title>Python.exe</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <canvas id="bgCanvas"></canvas>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <linearGradient id="crownGold" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#FFF3B0"/>
+        <stop offset="0.5" stop-color="#FFD34D"/>
+        <stop offset="1" stop-color="#C9860A"/>
+      </linearGradient>
+      <radialGradient id="crownJewel" cx="35%" cy="35%" r="70%">
+        <stop offset="0" stop-color="#FF9EB3"/>
+        <stop offset="1" stop-color="#D81B4A"/>
+      </radialGradient>
+    </defs>
+  </svg>
+
+  <div class="hud-corner hud-left">
+    <svg class="hud-crown" viewBox="0 0 100 82" xmlns="http://www.w3.org/2000/svg">
+      <path d="M2 80 L2 30 L27 52 L50 2 L73 52 L98 30 L98 80 Z" fill="url(#crownGold)" stroke="#7A4E00" stroke-width="3" stroke-linejoin="round"/>
+      <ellipse cx="32" cy="62" rx="12" ry="7" fill="#FFFFFF" opacity="0.35" transform="rotate(-15 32 62)"/>
+      <circle cx="50" cy="6" r="7.5" fill="url(#crownJewel)"/>
+      <circle cx="4" cy="32" r="6" fill="url(#crownJewel)"/>
+      <circle cx="96" cy="32" r="6" fill="url(#crownJewel)"/>
+    </svg>
+    <div class="hud-stat">
+      <span class="hud-label">BEST SCORE</span>
+      <span class="hud-value" id="best">0</span>
+    </div>
+    <span class="hud-divider"></span>
+    <div class="hud-stat">
+      <span class="hud-label">YOUR SCORE</span>
+      <span class="hud-value" id="score">0</span>
+    </div>
+    <span class="hud-hidden-level" id="level" hidden>1</span>
+  </div>
+
+  <div class="hud-corner hud-right">
+    <div class="quick-swatch-row" id="quickSwatchRow"></div>
+    <span class="hud-divider"></span>
+    <button class="icon-circle" id="themeToggleBtn" title="Toggle dark / light mode">&#127769;</button>
+  </div>
 
   <div class="arcade">
     <div class="title-block">
-      <h1><span class="dot">&bull;</span> <span class="accent-text">Python</span>.exe <span class="dot">&bull;</span></h1>
-      <p class="tagline"><span class="dot">&bull;</span> Classic game. Modern vibes. <span class="dot">&bull;</span></p>
-    </div>
-
-    <div class="hud">
-      <div>
-        <span class="label">SCORE</span>
-        <span class="value" id="score">0</span>
-      </div>
-      <div>
-        <span class="label">BEST <span class="crown">&#128081;</span></span>
-        <span class="value" id="best">0</span>
-      </div>
-      <div>
-        <span class="label">LEVEL</span>
-        <span class="value" id="level">1</span>
-      </div>
-      <button class="mute-btn" id="muteBtn" title="Mute sound">
-        <svg class="bars-icon" viewBox="0 0 24 24" width="14" height="14">
-          <rect x="3" y="12" width="4" height="9" rx="1"></rect>
-          <rect x="10" y="7" width="4" height="14" rx="1"></rect>
-          <rect x="17" y="2" width="4" height="19" rx="1"></rect>
+      <h1 class="game-logo">
+        <svg class="logo-crown" viewBox="0 0 100 82" xmlns="http://www.w3.org/2000/svg">
+          <path d="M2 80 L2 30 L27 52 L50 2 L73 52 L98 30 L98 80 Z" fill="url(#crownGold)" stroke="#7A4E00" stroke-width="3" stroke-linejoin="round"/>
+          <ellipse cx="32" cy="62" rx="12" ry="7" fill="#FFFFFF" opacity="0.35" transform="rotate(-15 32 62)"/>
+          <circle cx="50" cy="6" r="7.5" fill="url(#crownJewel)"/>
+          <circle cx="4" cy="32" r="6" fill="url(#crownJewel)"/>
+          <circle cx="96" cy="32" r="6" fill="url(#crownJewel)"/>
         </svg>
-      </button>
+        <span class="logo-title-row">
+          <span class="logo-line">Python</span><span class="logo-line logo-line-2">.exe</span>
+        </span>
+        <span class="logo-sparkle">&#10022;</span>
+      </h1>
+      <p class="tagline">EAT <span class="dot">&bull;</span> GROW <span class="dot">&bull;</span> BE THE LONGEST</p>
     </div>
 
     <div class="board-wrap">
-      <div class="pedestal">
-        <div class="pedestal-glow"></div>
-        <div class="pedestal-ring"></div>
-        <div class="pedestal-ticks"></div>
-      </div>
       <canvas id="game" width="480" height="480"></canvas>
+
       <div class="overlay show" id="overlay">
         <h2 class="overlay-heading">
-          <span class="h-line"></span>
-          <span class="dot">&bull;</span>
-          <span id="overlayTitle">Ready?</span>
-          <span class="dot">&bull;</span>
-          <span class="h-line"></span>
+          <span class="leaf-accent">&#10148;</span>
+          <span id="overlayTitle">Ready to slither?</span>
+          <span class="leaf-accent flip">&#10148;</span>
         </h2>
-        <p id="overlayText">Arrow keys or WASD to move. Eat the coins, don't bite yourself.</p>
+        <p id="overlayText">Grab some food, avoid the walls and beat your high score!</p>
 
-        <button class="theme-toggle" id="snakeColorBtn" type="button">
-          <span class="swatch-preview" id="swatchPreview" style="--swatch: #35E6A0"></span>
-          Snake Colour
+        <button class="btn-primary" id="startBtn">
+          <span class="play-icon">&#9654;</span> Start Game <span class="chevron">&#8250;</span>
         </button>
 
-        <button class="theme-toggle" id="themeToggleBtn" type="button">&#127769; Dark</button>
-        <button class="btn-primary" id="startBtn"><span class="play-icon">&#9654;</span> Start Game</button>
+        <button class="option-row" id="darkModeRow" type="button">
+          <span class="option-left"><span class="option-icon">&#127769;</span> Dark Mode</span>
+          <span class="switch" id="darkModeSwitch"><span class="switch-thumb"></span></span>
+        </button>
+
+        <button class="option-row" id="changeColourBtn" type="button">
+          <span class="option-left"><span class="option-icon">&#127912;</span> Change Colour</span>
+          <span class="chevron">&#8250;</span>
+        </button>
       </div>
     </div>
 
@@ -83,24 +111,14 @@
     </div>
   </div>
 
-  <button class="icon-btn corner-btn corner-btn-left" title="Best score">&#127942;</button>
-  <button class="icon-btn corner-btn corner-btn-right" title="Settings">&#9881;&#65039;</button>
+  <button class="icon-square corner-btn corner-btn-left" id="trophyBtn" title="Best score">&#127942;</button>
+  <button class="icon-square corner-btn corner-btn-right" id="settingsBtn" title="Sound">&#9881;&#65039;</button>
 
   <div class="color-modal-backdrop" id="colorModalBackdrop">
     <div class="color-modal">
       <div class="color-modal-header">
         <span>Snake Colour</span>
         <button class="color-modal-close" id="colorModalClose" type="button" aria-label="Close">&#10005;</button>
-      </div>
-      <div class="color-modal-grid" id="colorModalGrid"></div>
-    </div>
-  </div>
-
-  <div class="color-modal-backdrop" id="colorModalBackdrop">
-    <div class="color-modal">
-      <div class="color-modal-header">
-        <span>&#127912; Snake Colour</span>
-        <button class="color-modal-close" id="colorModalClose" aria-label="Close">&times;</button>
       </div>
       <div class="color-modal-grid" id="colorModalGrid"></div>
     </div>
