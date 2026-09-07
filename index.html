@@ -11,8 +11,28 @@
 </head>
 <body>
 
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <linearGradient id="crownGold" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#FFF3B0"/>
+        <stop offset="0.5" stop-color="#FFD34D"/>
+        <stop offset="1" stop-color="#C9860A"/>
+      </linearGradient>
+      <radialGradient id="crownJewel" cx="35%" cy="35%" r="70%">
+        <stop offset="0" stop-color="#FF9EB3"/>
+        <stop offset="1" stop-color="#D81B4A"/>
+      </radialGradient>
+    </defs>
+  </svg>
+
   <div class="hud-corner hud-left">
-    <span class="hud-crown">&#128081;</span>
+    <svg class="hud-crown" viewBox="0 0 100 82" xmlns="http://www.w3.org/2000/svg">
+      <path d="M2 80 L2 30 L27 52 L50 2 L73 52 L98 30 L98 80 Z" fill="url(#crownGold)" stroke="#7A4E00" stroke-width="3" stroke-linejoin="round"/>
+      <ellipse cx="32" cy="62" rx="12" ry="7" fill="#FFFFFF" opacity="0.35" transform="rotate(-15 32 62)"/>
+      <circle cx="50" cy="6" r="7.5" fill="url(#crownJewel)"/>
+      <circle cx="4" cy="32" r="6" fill="url(#crownJewel)"/>
+      <circle cx="96" cy="32" r="6" fill="url(#crownJewel)"/>
+    </svg>
     <div class="hud-stat">
       <span class="hud-label">BEST SCORE</span>
       <span class="hud-value" id="best">0</span>
@@ -34,7 +54,13 @@
   <div class="arcade">
     <div class="title-block">
       <h1 class="game-logo">
-        <span class="logo-crown">&#128081;</span>
+        <svg class="logo-crown" viewBox="0 0 100 82" xmlns="http://www.w3.org/2000/svg">
+          <path d="M2 80 L2 30 L27 52 L50 2 L73 52 L98 30 L98 80 Z" fill="url(#crownGold)" stroke="#7A4E00" stroke-width="3" stroke-linejoin="round"/>
+          <ellipse cx="32" cy="62" rx="12" ry="7" fill="#FFFFFF" opacity="0.35" transform="rotate(-15 32 62)"/>
+          <circle cx="50" cy="6" r="7.5" fill="url(#crownJewel)"/>
+          <circle cx="4" cy="32" r="6" fill="url(#crownJewel)"/>
+          <circle cx="96" cy="32" r="6" fill="url(#crownJewel)"/>
+        </svg>
         <span class="logo-title-row">
           <span class="logo-line">Python</span><span class="logo-line logo-line-2">.exe</span>
         </span>
