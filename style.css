@@ -60,8 +60,10 @@ body.game-active {
 .hud-right { right: 24px; }
 
 .hud-crown {
-  font-size: 20px;
+  width: 22px;
+  height: auto;
   filter: drop-shadow(0 0 6px rgba(255, 200, 70, 0.7));
+  flex-shrink: 0;
 }
 
 .hud-stat {
@@ -178,9 +180,10 @@ body.game-active {
 }
 
 .logo-crown {
-  font-size: 0.42em;
+  width: 0.5em;
+  height: auto;
   filter: drop-shadow(0 0 10px rgba(255, 205, 70, 0.85));
-  margin-bottom: -4px;
+  margin-bottom: -2px;
 }
 
 .logo-sparkle {
